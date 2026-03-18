@@ -297,6 +297,263 @@ Generate a file called `GEO-AUDIT-REPORT.md` with the following structure:
 
 ---
 
+## CLIENT-REPORT.md — Business-Friendly Summary
+
+In addition to the technical `GEO-AUDIT-REPORT.md`, generate a `CLIENT-REPORT.md` written for **business owners, not developers**. This report translates technical findings into plain English and business impact.
+
+### Writing Guidelines
+
+- **No jargon** — explain technical concepts simply
+- **Business impact first** — every issue should explain what it costs the business
+- **Actionable** — connect findings to specific fixes
+- **Conversational tone** — write as a consultant, not a tool
+- **Use analogies** — help non-technical readers understand (e.g., "It's like having a store with no sign")
+
+### CLIENT-REPORT.md Structure
+
+```markdown
+# Website Visibility Audit for [Business Name]
+
+**Prepared for:** [Contact Name], [Title]
+**Date:** [Date]
+**Your Website:** [URL]
+
+---
+
+## What This Report Is About (In Plain English)
+
+### The Short Version
+
+When someone asks **ChatGPT, Google AI, or Perplexity** a question like *"[Sample query relevant to their business]"* — **your business is rarely mentioned**, even though you have [key credibility facts].
+
+**This audit explains why and shows you exactly how to fix it.**
+
+---
+
+## Why This Matters to Your Business
+
+### The New Way People Find Businesses
+
+**Traditional Google Search (Still Important):**
+- Customer searches "[relevant query]"
+- Gets a list of 10 blue links
+- Clicks through to websites
+
+**AI Search (Growing Fast):**
+- Customer asks ChatGPT: "[natural language question]"
+- AI gives a direct answer with 2-3 specific recommendations
+- Customer calls those businesses directly
+
+### The Problem
+
+Right now, when AI systems answer questions about [industry/location], **they rarely mention your business** — not because you're not qualified, but because your website doesn't "speak AI" yet.
+
+**What this means for you:**
+- Lost phone calls from potential customers who never hear your name
+- Competitors who optimize for AI get recommended instead of you
+- Your [years] of experience and [credentials] are invisible to these systems
+
+---
+
+## What Is "GEO"? (And Why Should You Care?)
+
+**GEO = Generative Engine Optimization**
+
+- **SEO** = Making your website show up in Google search results
+- **GEO** = Making your website get recommended by ChatGPT, Claude, Google AI, and Perplexity
+
+Studies show that **30-115% more people** see businesses that are optimized for AI search compared to those that aren't.
+
+---
+
+## Your Current Score: [X]/100
+
+**What this means:**
+- [Score interpretation in plain language]
+- [What the score means for their business]
+
+### Think of it like curb appeal for your website:
+[Analogy that explains the score in relatable terms]
+
+---
+
+## What's Working Well ✅
+
+[5 bullet points of strengths, starting with ✅]
+
+**The foundation is solid.** We just need to make AI systems *notice* it.
+
+---
+
+## The 6 Biggest Problems (And What They Cost You)
+
+### 1. ❌ [Issue Title]
+
+**The Issue:** [Plain English explanation]
+
+**What This Costs You:** [Business impact — lost leads, lost calls, competitors winning]
+
+**Business Impact:** [Specific, quantified if possible]
+
+[Repeat for issues 2-6]
+
+---
+
+## What Happens If You Do Nothing?
+
+**Short-term (Next 6 months):**
+- [Consequence 1]
+- [Consequence 2]
+- [Consequence 3]
+
+**Long-term (1-2 years):**
+- [Consequence 1]
+- [Consequence 2]
+- [Consequence 3]
+
+**Think of it like websites in 2005:** Early adopters dominated. Those who waited struggled to catch up.
+
+---
+
+## The Good News: This Is All Fixable
+
+Unlike some business problems, **every issue in this audit has a clear solution** with a known ROI.
+
+### Quick Wins (1 Hour of Work = Immediate Impact)
+
+[7 numbered quick fixes with time estimates and expected score improvement]
+
+---
+
+## Your 30-Day Implementation Plan
+
+### Week 1: Fix Critical Technical Issues
+**Time Required:** [X] hours
+**Can Be Done By:** [Who]
+- [Action items]
+**Expected Impact:** Score improves to ~[X]
+
+### Week 2: Build Your Online Identity
+**Time Required:** [X] hours
+**Can Be Done By:** [Who]
+- [Action items]
+**Expected Impact:** Score improves to ~[X]
+
+### Week 3: Add Depth and Data
+**Time Required:** [X] hours
+**Can Be Done By:** [Who]
+- [Action items]
+**Expected Impact:** Score improves to ~[X]
+
+### Week 4: Polish and Test
+**Time Required:** [X] hours
+**Can Be Done By:** [Who]
+- [Action items]
+**Expected Impact:** Score reaches ~[X]
+
+---
+
+## The Investment
+
+### Option 1: Do It Yourself
+**Time Required:** [X] hours over 30 days
+**Cost:** Your time + maybe [X] hours of web developer help ($X)
+**Best For:** If you enjoy this stuff and have the time
+
+### Option 2: Hire Someone to Implement
+**Estimated Cost:** $[X]-[X] for full implementation
+**Time Required from You:** [X] hours
+**Best For:** If you'd rather focus on running the business
+
+### Option 3: Hybrid Approach
+**You do:** Write the content (you're the expert)
+**Developer does:** All technical implementation
+**Estimated Cost:** $[X]-[X]
+**Best For:** Most business owners
+
+---
+
+## Expected Return on Investment
+
+### Conservative Estimate:
+
+**Assumptions:**
+- [Traffic assumptions]
+- [Conversion assumptions]
+
+**Result:**
+- [X] additional leads per month
+- **Additional monthly revenue: $[X]-[X]**
+- **Annual impact: $[X]-[X]**
+
+**Break-even:** Implementation pays for itself in the first month.
+
+---
+
+## Frequently Asked Questions
+
+### "[Common objection/question]"
+[Answer in conversational tone]
+
+[Repeat for 4-5 FAQs]
+
+---
+
+## Real-World Example: What This Looks Like
+
+### Before Optimization:
+
+**Customer:** "Hey ChatGPT, [sample question]"
+**ChatGPT:** "[Response that doesn't mention client's business]"
+*[Your business: Not mentioned]*
+
+### After Optimization:
+
+**Customer:** "Hey ChatGPT, [same question]"
+**ChatGPT:** "[Response that recommends client's business with specific details]"
+*[Your business: Mentioned first with specific details]*
+
+**That's the difference.** Same customer, same question. One scenario: they never hear about you. Other scenario: you're recommended with supporting details.
+
+---
+
+## Next Steps: What to Do Right Now
+
+### Step 1: Review the Full Technical Report
+The detailed audit report is included (GEO-AUDIT-REPORT.md).
+
+### Step 2: Decide Your Approach
+- **DIY:** Set aside [X] hours over next month
+- **Hire it out:** Budget $[X]-[X] for full implementation
+- **Hybrid:** You write content, developer handles code
+
+### Step 3: Start with Quick Wins (This Week)
+Even before deciding on the full plan, these quick fixes deliver immediate value.
+
+### Step 4: Schedule the 30-Day Plan
+Block time on your calendar or schedule it with your implementation team.
+
+---
+
+## The Bottom Line
+
+You've built an excellent business. You have the experience, the reputation, and the satisfied customers to prove it.
+
+**The only thing holding you back is that AI systems don't know about it yet.**
+
+This audit is your roadmap to change that — with specific fixes, clear timelines, and measurable results.
+
+**The question isn't whether to do this.** Your competitors will figure this out eventually.
+
+**The question is: Do you want to be ahead of them or catching up to them?**
+
+---
+
+*This report was prepared [Date] specifically for [Business Name]. Results and timelines are based on current AI search landscape and typical implementation speeds.*
+```
+
+---
+
 ## Quality Gates
 
 - **Page Limit:** Never crawl more than 50 pages per audit. Prioritize high-value pages.
