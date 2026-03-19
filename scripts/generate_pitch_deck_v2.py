@@ -44,6 +44,8 @@ WHITE = (1, 1, 1)
 AMBER = (245/255, 166/255, 35/255)           # #F5A623 - warning/low scores
 SCORE_BAR_BG = (232/255, 236/255, 240/255)   # #E8ECF0 - score bar background
 WARN_BG = (255/255, 248/255, 230/255)        # #FFF8E6 - warning callout background
+SOFT_RED_BG = (255/255, 240/255, 240/255)    # #FFF0F0 - before box background
+SOFT_GREEN_BG = (239/255, 255/255, 239/255)  # #EFFFEF - after box background
 LIGHT_BLUE_BG = (26/255, 74/255, 110/255)    # #1a4a6e - info box background
 MUTED_BLUE = (148/255, 184/255, 204/255)     # #94b8cc - labels and "Confidential"
 
@@ -278,6 +280,110 @@ class PitchDeckGenerator:
     def _gap(self, h=8):
         """Add vertical gap."""
         self.y -= h
+
+    def _numbered(self, num, title, desc):
+        """Draw numbered item with circle - matches build_pdf3.py numbered()."""
+        self._need(40)
+        r = 11
+        cx = MARGIN + r
+        cy = self.y
+        self.c.setFillColorRGB(*AQUAMARINE)
+        self.c.circle(cx, cy, r, fill=1, stroke=0)
+        self.c.setFillColorRGB(*DEEP_BLUE)
+        self.c.setFont(FONT_REGULAR, 10)
+        self.c.drawCentredString(cx, cy - 4, str(num))
+        self._draw_semibold_text(MARGIN + 28, self.y - 2, title, 11, DEEP_BLUE)
+        self.y -= 15
+        if desc:
+            CW = PAGE_WIDTH - 2 * MARGIN
+            self.c.setFont(FONT_LIGHT, 9)
+            cpl = int((CW - 28) / (9 * 0.475))
+            self.c.setFillColorRGB(*DEEP_BLUE)
+            for ln in textwrap.wrap(desc, width=cpl):
+                self.c.drawString(MARGIN + 28, self.y, ln)
+                self.y -= 12
+        self.y -= 4
+
+    def _stats_row(self, items):
+        """Draw stats row with large values and labels - matches build_pdf3.py stats_row()."""
+        self._need(55)
+        CW = PAGE_WIDTH - 2 * MARGIN
+        w = CW / len(items)
+        for i, (val, lab) in enumerate(items):
+            cx = MARGIN + i * w + w / 2
+            val_width = self.c.stringWidth(val, FONT_SEMIBOLD, 24)
+            self._draw_semibold_text(cx - val_width / 2, self.y, val, 24, AQUAMARINE)
+            self.c.setFillColorRGB(*DEEP_BLUE)
+            self.c.setFont(FONT_LIGHT, 8.5)
+            self.c.drawCentredString(cx, self.y - 16, lab)
+        self.y -= 42
+
+    def _option_card(self, title, desc):
+        """Draw option card with left accent - matches build_pdf3.py option_card()."""
+        CW = PAGE_WIDTH - 2 * MARGIN
+        self.c.setFont(FONT_LIGHT, 9)
+        cpl = int((CW - 28) / (9 * 0.475))
+        lines = textwrap.wrap(desc, width=cpl)
+        ch = 18 + len(lines) * 12 + 10
+        self._need(ch + 6)
+        self.c.setFillColorRGB(*STONE)
+        self.c.roundRect(MARGIN, self.y - ch + 8, CW, ch, 4, fill=1, stroke=0)
+        self.c.setFillColorRGB(*AQUAMARINE)
+        self.c.rect(MARGIN, self.y - ch + 8, 4, ch, fill=1, stroke=0)
+        self._draw_semibold_text(MARGIN + 14, self.y, title, 11, DEEP_BLUE)
+        self.c.setFillColorRGB(*DEEP_BLUE)
+        self.c.setFont(FONT_LIGHT, 9)
+        ty = self.y - 14
+        for ln in lines:
+            self.c.drawString(MARGIN + 14, ty, ln)
+            ty -= 12
+        self.y -= ch + 4
+
+    def _table(self, hdrs, rows):
+        """Draw comparison table - matches build_pdf3.py table()."""
+        CW = PAGE_WIDTH - 2 * MARGIN
+        ncol = len(hdrs)
+        rh = 24
+        total_h = (1 + len(rows)) * rh
+        self._need(total_h + 10)
+        cw = CW / ncol
+        x0 = MARGIN
+        # Header row
+        self.c.setFillColorRGB(*DEEP_BLUE)
+        self.c.rect(x0, self.y - rh, CW, rh, fill=1, stroke=0)
+        self.c.setFillColorRGB(*WHITE)
+        self.c.setFont(FONT_LIGHT, 9)
+        for i, h in enumerate(hdrs):
+            self.c.drawString(x0 + i * cw + 8, self.y - rh + 8, h)
+        self.y -= rh
+        # Data rows
+        for r, row in enumerate(rows):
+            bg = STONE if r % 2 == 0 else WHITE
+            self.c.setFillColorRGB(*bg)
+            self.c.rect(x0, self.y - rh, CW, rh, fill=1, stroke=0)
+            self.c.setFillColorRGB(*DEEP_BLUE)
+            self.c.setFont(FONT_LIGHT, 9)
+            for i, cell in enumerate(row):
+                self.c.drawString(x0 + i * cw + 8, self.y - rh + 8, cell)
+            self.y -= rh
+        self.y -= 8
+
+    def _timeline(self, week, title, led_by, items, score):
+        """Draw timeline entry - matches build_pdf3.py timeline()."""
+        self._need(28 + len(items) * 14)
+        bw, bh = 54, 20
+        self.c.setFillColorRGB(*DEEP_BLUE)
+        self.c.roundRect(MARGIN, self.y - bh + 6, bw, bh, 3, fill=1, stroke=0)
+        self.c.setFillColorRGB(*AQUAMARINE)
+        self.c.setFont(FONT_LIGHT, 9)
+        self.c.drawCentredString(MARGIN + bw / 2, self.y - 7, week)
+        self._draw_semibold_text(MARGIN + bw + 8, self.y - 4, title, 11, DEEP_BLUE)
+        self.c.setFillColorRGB(*LILAC)
+        self.c.setFont(FONT_LIGHT, 8)
+        self.c.drawString(MARGIN + bw + 8, self.y - 16, f"Led by: {led_by}  |  Expected Score: {score}")
+        self.y -= 28
+        for item in items:
+            self._bullet(item, indent=18, size=9)
 
     def _draw_text(self, text, x, y, font=None, size=10, color=DEEP_BLUE,
                    max_width=None, leading=None):
@@ -704,526 +810,472 @@ class PitchDeckGenerator:
                 self._bullet(m)
 
     def _page_4_issues_1_to_3(self):
-        """Issues 1-3 page."""
-        self._new_page()
-        self._draw_header()
-        self._draw_footer()
+        """Issues 1-3 page - matches build_pdf3.py p_issues1()."""
+        self._start_content_page()
 
-        y = PAGE_HEIGHT - 100
+        self._h1("The 6 Key Issues Identified")
+        self._gap(3)
 
-        # Title
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 24)
-        self.c.drawString(MARGIN, y, "The 6 Key Issues Identified")
-        y -= 40
+        # Issue 1
+        title1 = self.data.get('ISSUE_1_TITLE', "AI Systems Don't Know Who You Are")
+        body1 = self.data.get('ISSUE_1_BODY',
+            'Your business has no "identity" in AI databases – no Wikipedia page, no LinkedIn '
+            'company page, minimal online presence beyond your website.')
+        callout1 = self.data.get('ISSUE_1_CALLOUT', 'Impact: Lost leads from the 30–40% of people now using AI to research local services.')
 
-        # Issues 1-3
-        for i in range(1, 4):
-            title = self.data.get(f'ISSUE_{i}_TITLE', '')
-            body = self.data.get(f'ISSUE_{i}_BODY', '')
-            callout = self.data.get(f'ISSUE_{i}_CALLOUT', '') or self.data.get(f'ISSUE_{i}_EXAMPLE', '')
+        self._h2(f"1. {title1}")
+        self._body(body1)
+        self._gap(3)
+        if callout1:
+            self._callout(callout1, bg=WARN_BG, border=AMBER)
+        self._gap(6)
 
-            if not title:
-                continue
+        # Issue 2
+        title2 = self.data.get('ISSUE_2_TITLE', "Your Website Has No Dates On Anything")
+        body2 = self.data.get('ISSUE_2_BODY',
+            'Not a single page shows when it was published or last updated. Your testimonials have '
+            'no dates. AI systems assume undated content is stale and won\'t cite it.')
+        example2 = self.data.get('ISSUE_2_EXAMPLE', '')
 
-            # Issue number and title
-            self.c.setFillColorRGB(*DEEP_BLUE)
-            self.c.setFont(FONT_SEMIBOLD, 14)
-            self.c.drawString(MARGIN, y, f"{i}. {title}")
-            y -= 20
+        self._h2(f"2. {title2}")
+        self._body(body2)
+        self._gap(3)
+        if example2:
+            self._body(example2, size=9, color=MIDNIGHT_GREEN)
+        self._gap(6)
 
-            # Body
-            y = self._draw_text(body, MARGIN, y, max_width=500)
-            y -= 5
+        # Issue 3
+        title3 = self.data.get('ISSUE_3_TITLE', "Testimonials Are Hidden From AI")
+        body3 = self.data.get('ISSUE_3_BODY',
+            'You have customer testimonials but they\'re not marked up in a way AI systems '
+            'can understand. No star ratings show up in Google results.')
+        callout3 = self.data.get('ISSUE_3_CALLOUT',
+            'This is a solvable problem. With the right technical implementation, your '
+            'reviews can start showing star ratings in search results immediately.')
 
-            # Callout
-            if callout:
-                self.c.setFillColorRGB(*MIDNIGHT_GREEN)
-                self.c.setFont(FONT_LIGHT, 9)
-                y = self._draw_text(callout, MARGIN + 15, y, color=MIDNIGHT_GREEN, max_width=485, size=9)
-
-            y -= 25
+        self._h2(f"3. {title3}")
+        self._body(body3)
+        self._gap(3)
+        if callout3:
+            self._callout(callout3)
 
     def _page_5_issues_4_to_6(self):
-        """Issues 4-6 + What Happens page."""
-        self._new_page()
-        self._draw_header()
-        self._draw_footer()
+        """Issues 4-6 + What Happens page - matches build_pdf3.py p_issues2()."""
+        self._start_content_page()
 
-        y = PAGE_HEIGHT - 100
+        # Issue 4
+        title4 = self.data.get('ISSUE_4_TITLE', "Content Is Generic Marketing Copy")
+        body4 = self.data.get('ISSUE_4_BODY',
+            'Your service pages use generic phrases but lack the specific, verifiable data that '
+            'AI systems look for when deciding which businesses to recommend.')
+        callout4 = self.data.get('ISSUE_4_CALLOUT',
+            "Peakweb's content strategy transforms your real-world expertise into the data-rich, "
+            "AI-friendly format that earns citations and recommendations.")
 
-        # Issues 4-6
-        for i in range(4, 7):
-            title = self.data.get(f'ISSUE_{i}_TITLE', '')
-            body = self.data.get(f'ISSUE_{i}_BODY', '')
-            callout = self.data.get(f'ISSUE_{i}_CALLOUT', '') or self.data.get(f'ISSUE_{i}_EXAMPLE', '')
+        self._h2(f"4. {title4}")
+        self._body(body4)
+        self._gap(3)
+        if callout4:
+            self._callout(callout4)
+        self._gap(6)
 
-            if not title:
-                continue
+        # Issue 5
+        title5 = self.data.get('ISSUE_5_TITLE', "Missing Technical Files AI Systems Look For")
+        body5 = self.data.get('ISSUE_5_BODY',
+            "Your site is missing critical configuration files that AI systems rely on to "
+            "understand and index your business. Without them, AI systems have to guess what "
+            "you do – many give up and cite competitors instead.")
+        callout5 = self.data.get('ISSUE_5_CALLOUT',
+            "These files require precise formatting and placement. Misconfigured files "
+            "can actually hurt visibility. Peakweb handles this as part of every GEO engagement.")
 
-            self.c.setFillColorRGB(*DEEP_BLUE)
-            self.c.setFont(FONT_SEMIBOLD, 14)
-            self.c.drawString(MARGIN, y, f"{i}. {title}")
-            y -= 20
+        self._h2(f"5. {title5}")
+        self._body(body5)
+        self._gap(2)
+        if callout5:
+            self._callout(callout5)
+        self._gap(6)
 
-            y = self._draw_text(body, MARGIN, y, max_width=500)
-            y -= 5
+        # Issue 6
+        title6 = self.data.get('ISSUE_6_TITLE', "Business Information Inconsistency")
+        body6 = self.data.get('ISSUE_6_BODY',
+            "AI systems fact-check claims. When they find conflicting information across "
+            "your online presence, they either skip citing you entirely or cite competitors "
+            "with consistent information.")
+        callout6 = self.data.get('ISSUE_6_CALLOUT',
+            "Resolving this requires a coordinated update across your website, directory listings, "
+            "and business profiles. Peakweb ensures consistency across every platform AI checks.")
 
-            if callout:
-                self.c.setFillColorRGB(*MIDNIGHT_GREEN)
-                y = self._draw_text(callout, MARGIN + 15, y, color=MIDNIGHT_GREEN, max_width=485, size=9)
-
-            y -= 25
+        self._h2(f"6. {title6}")
+        self._body(body6)
+        self._gap(3)
+        if callout6:
+            self._callout(callout6)
+        self._gap(8)
 
         # What Happens If You Do Nothing
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 16)
-        self.c.drawString(MARGIN, y, "What Happens If You Do Nothing?")
-        y -= 25
+        self._h2("What Happens If You Do Nothing?")
+        self._gap(2)
 
-        # Short-term
-        self.c.setFont(FONT_SEMIBOLD, 11)
-        self.c.drawString(MARGIN, y, "Short-term (Next 6 months):")
-        y -= 15
-
+        self._h3("Short-term (Next 6 months):")
         short_term = [
-            self.data.get('NOTHING_SHORT_1', ''),
-            self.data.get('NOTHING_SHORT_2', ''),
-            self.data.get('NOTHING_SHORT_3', ''),
+            self.data.get('NOTHING_SHORT_1', 'Competitors who optimize for AI will get recommended more often'),
+            self.data.get('NOTHING_SHORT_2', "You'll continue missing leads from the growing AI search audience (30–40% of searches)"),
+            self.data.get('NOTHING_SHORT_3', 'The gap between you and optimized competitors widens'),
         ]
-        short_term = [s for s in short_term if s]
-        y = self._draw_bullet_list(short_term, MARGIN, y, max_width=490)
-        y -= 15
+        for s in short_term:
+            if s:
+                self._bullet(s)
+        self._gap(3)
 
-        # Long-term
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 11)
-        self.c.drawString(MARGIN, y, "Long-term (1–2 years):")
-        y -= 15
-
+        self._h3("Long-term (1–2 years):")
         long_term = [
-            self.data.get('NOTHING_LONG_1', ''),
-            self.data.get('NOTHING_LONG_2', ''),
-            self.data.get('NOTHING_LONG_3', ''),
+            self.data.get('NOTHING_LONG_1', 'AI search becomes the dominant way people find local services'),
+            self.data.get('NOTHING_LONG_2', 'Businesses without AI visibility become increasingly invisible'),
+            self.data.get('NOTHING_LONG_3', 'Playing catch-up gets harder as competitors build content libraries and authority'),
         ]
-        long_term = [l for l in long_term if l]
-        self._draw_bullet_list(long_term, MARGIN, y, max_width=490)
+        for l in long_term:
+            if l:
+                self._bullet(l)
 
     def _page_6_opportunity(self):
-        """The Opportunity page."""
-        self._new_page()
-        self._draw_header()
-        self._draw_footer()
+        """The Opportunity page - matches build_pdf3.py p_quick_wins()."""
+        self._start_content_page()
 
-        y = PAGE_HEIGHT - 100
+        self._h1("The Opportunity")
+        self._body(
+            "Our audit identified issues across four key areas that are preventing AI systems "
+            "from recommending your business. The good news: every one of them is fixable, and "
+            "the projected impact is significant."
+        )
+        self._gap(6)
 
-        # Title
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 24)
-        self.c.drawString(MARGIN, y, "The Opportunity")
-        y -= 30
-
-        intro = "Our audit identified issues across four key areas that are preventing AI systems from recommending your business. The good news: every one of them is fixable, and the projected impact is significant."
-        y = self._draw_text(intro, MARGIN, y, max_width=500)
-        y -= 30
-
-        # Score improvement box
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 14)
-        self.c.drawString(MARGIN, y, "Your Score Improvement Potential")
-        y -= 40
+        self._h2("Your Score Improvement Potential")
+        self._gap(4)
 
         score = self.data.get('GEO_SCORE', 53)
-        projected = self.data.get('PROJECTED', '85/100')
+        projected = self.data.get('PROJECTED', '79+')
+        if '/' in str(projected):
+            projected = str(projected).replace('/100', '+')
 
-        # Current score
-        self.c.setFont(FONT_SEMIBOLD, 28)
-        self.c.drawString(MARGIN + 50, y, str(score))
-        self.c.setFont(FONT_LIGHT, 10)
-        self.c.drawString(MARGIN + 50, y - 20, "Current Score")
+        self._stats_row([
+            (str(score), "Current Score"),
+            ("→", ""),
+            (projected, "Projected Score"),
+        ])
+        self._gap(4)
 
-        # Arrow
-        self.c.setFont(FONT_LIGHT, 24)
-        self.c.drawString(MARGIN + 150, y, "→")
+        self._h3("Areas Requiring Attention:")
+        self._gap(2)
 
-        # Projected score
-        self.c.setFillColorRGB(*AQUAMARINE)
-        self.c.setFont(FONT_SEMIBOLD, 28)
-        self.c.drawString(MARGIN + 250, y, projected.replace('/100', '+'))
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_LIGHT, 10)
-        self.c.drawString(MARGIN + 250, y - 20, "Projected Score")
+        self._numbered(1, "Technical Configuration",
+            self.data.get('OPP_1_DESC',
+                "Your site is missing key files and data formats that AI systems "
+                "rely on to discover, understand, and recommend local businesses."))
+        self._numbered(2, "Content & Authority Signals",
+            self.data.get('OPP_2_DESC',
+                "AI systems need verifiable data, not marketing copy. Your experience "
+                "isn't documented in a way AI can parse and cite."))
+        self._numbered(3, "Trust & Consistency",
+            self.data.get('OPP_3_DESC',
+                "Conflicting information across your online presence causes AI systems "
+                "to question your credibility and skip you in favor of competitors."))
+        self._numbered(4, "Freshness & Relevance",
+            self.data.get('OPP_4_DESC',
+                "Without timestamps, update signals, and current content, AI treats "
+                "your site as potentially outdated and deprioritizes it."))
+        self._gap(6)
 
-        y -= 60
-
-        # Areas
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 14)
-        self.c.drawString(MARGIN, y, "Areas Requiring Attention:")
-        y -= 25
-
-        areas = [
-            ("1", "Technical Configuration", self.data.get('OPP_1_DESC', '')),
-            ("2", "Content & Authority Signals", self.data.get('OPP_2_DESC', '')),
-            ("3", "Trust & Consistency", self.data.get('OPP_3_DESC', '')),
-            ("4", "Freshness & Relevance", self.data.get('OPP_4_DESC', '')),
-        ]
-
-        for num, title, desc in areas:
-            # Number circle
-            self.c.setFillColorRGB(*AQUAMARINE)
-            self.c.circle(MARGIN + 10, y + 5, 10, fill=1, stroke=0)
-            self.c.setFillColorRGB(*DEEP_BLUE)
-            self.c.setFont(FONT_SEMIBOLD, 10)
-            self.c.drawCentredString(MARGIN + 10, y + 2, num)
-
-            # Title
-            self.c.setFont(FONT_SEMIBOLD, 11)
-            self.c.drawString(MARGIN + 30, y + 5, title)
-
-            # Description
-            self.c.setFont(FONT_LIGHT, 9)
-            y = self._draw_text(desc, MARGIN + 30, y - 10, max_width=470, size=9)
-            y -= 15
+        self._callout(
+            "Each of these areas involves multiple coordinated changes that must be implemented "
+            "correctly and in the right sequence. Peakweb's GEO methodology addresses all four "
+            "areas in a structured 30-day engagement – validated across every major AI platform."
+        )
 
     def _page_7_roadmap(self):
-        """4-Week Roadmap page."""
-        self._new_page()
-        self._draw_header()
-        self._draw_footer()
+        """4-Week Roadmap page - matches build_pdf3.py p_plan()."""
+        self._start_content_page()
 
-        y = PAGE_HEIGHT - 100
+        self._h1("How Peakweb Gets You There")
+        self._gap(3)
+        self._body(
+            "Our GEO methodology follows a proven 4-week rollout, sequenced so each phase "
+            "builds on the last. You stay focused on running your business while we handle "
+            "the technical implementation and platform validation."
+        )
+        self._gap(4)
 
-        # Title
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 24)
-        self.c.drawString(MARGIN, y, "How Peakweb Gets You There")
-        y -= 30
+        city = self.data.get('CITY', 'local')
 
-        intro = "Our GEO methodology follows a proven 4-week rollout, sequenced so each phase builds on the last. You stay focused on running your business while we handle the technical implementation and platform validation."
-        y = self._draw_text(intro, MARGIN, y, max_width=500)
-        y -= 30
+        self._timeline("Week 1", "Technical Foundation", "Peakweb-led", [
+            "Deploy all critical AI configuration and discovery signals",
+            "Resolve trust and consistency issues across your online presence",
+        ], self.data.get('W1_SCORE', '70–75'))
+        self._gap(3)
 
-        weeks = [
-            ("Week 1", "Technical Foundation", self.data.get('W1_SCORE', '65/100'), "Peakweb-led", [
-                "Deploy all critical AI configuration and discovery signals",
-                "Resolve trust and consistency issues across your online presence"
-            ]),
-            ("Week 2", "Authority & Identity", self.data.get('W2_SCORE', '72/100'), "Collaborative", [
-                "Build your verified presence on key AI-indexed platforms",
-                "You provide business content; we structure it for AI consumption"
-            ]),
-            ("Week 3", "Content Depth", self.data.get('W3_SCORE', '80/100'), "Collaborative", [
-                f"Publish AI-optimized content that positions you as the {self.data.get('CITY', 'local')} authority",
-                "Enrich your site with the verifiable data AI systems cite"
-            ]),
-            ("Week 4", "Validation & Launch", self.data.get('W4_SCORE', '85/100'), "Peakweb-led", [
-                "QA across all major AI platforms (ChatGPT, Perplexity, Claude, Google AI)",
-                "Deliver monitoring dashboard and ongoing content strategy"
-            ]),
-        ]
+        self._timeline("Week 2", "Authority & Identity", "Collaborative", [
+            "Build your verified presence on key AI-indexed platforms",
+            "You provide business content; we structure it for AI consumption",
+        ], self.data.get('W2_SCORE', '78–82'))
+        self._gap(3)
 
-        for week, title, score, led_by, bullets in weeks:
-            # Week header
-            self.c.setFillColorRGB(*DEEP_BLUE)
-            self.c.setFont(FONT_SEMIBOLD, 12)
-            self.c.drawString(MARGIN, y, f"{week}")
+        self._timeline("Week 3", "Content Depth", "Collaborative", [
+            f"Publish AI-optimized content that positions you as the {city} authority",
+            "Enrich your site with the verifiable data AI systems cite",
+        ], self.data.get('W3_SCORE', '82–86'))
+        self._gap(3)
 
-            self.c.setFont(FONT_SEMIBOLD, 12)
-            self.c.drawString(MARGIN + 60, y, title)
-
-            # Led by and score
-            self.c.setFillColorRGB(*LILAC)
-            self.c.setFont(FONT_LIGHT, 8)
-            self.c.drawString(MARGIN + 60, y - 12, f"Led by: {led_by}  |  Expected Score: {score}")
-
-            y -= 30
-
-            # Bullets
-            self.c.setFillColorRGB(*DEEP_BLUE)
-            y = self._draw_bullet_list(bullets, MARGIN + 20, y, max_width=470, spacing=10)
-            y -= 15
+        self._timeline("Week 4", "Validation & Launch", "Peakweb-led", [
+            "QA across all major AI platforms (ChatGPT, Perplexity, Claude, Google AI)",
+            "Deliver monitoring dashboard and ongoing content strategy",
+        ], self.data.get('W4_SCORE', '85–90'))
 
     def _page_8_pricing(self):
-        """Pricing and ROI page."""
-        self._new_page()
-        self._draw_header()
-        self._draw_footer()
+        """Pricing and ROI page - matches build_pdf3.py p_investment()."""
+        self._start_content_page()
 
-        y = PAGE_HEIGHT - 100
+        self._h1("Working With Peakweb")
+        self._gap(3)
+        self._body(
+            "GEO optimization involves specialized technical work – structured data formats, "
+            "AI crawler protocols, and platform-specific configurations that change frequently. "
+            "A general web developer can update your content, but the AI-specific implementation "
+            "requires expertise in how each AI platform indexes and ranks local businesses."
+        )
+        self._gap(4)
 
-        # Title
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 24)
-        self.c.drawString(MARGIN, y, "Working With Peakweb")
-        y -= 30
+        self._option_card(
+            "GEO Essentials – Guided Implementation ($1,000)",
+            "Peakweb handles all 7 priority technical fixes, deploys AI configuration files, "
+            "implements structured data, and validates your site across all major AI platforms. "
+            "You provide business content (photos, testimonials, project details); we handle the rest. "
+            "Includes 30-day post-launch monitoring."
+        )
+        self._option_card(
+            "GEO Growth – Full 30-Day Engagement ($2,000–$3,000)",
+            "Everything in Essentials plus: authority-building across AI-indexed platforms, "
+            "AI-optimized content creation (guides, FAQs, case studies), video channel repair, "
+            "and a 90-day monitoring dashboard. Best for maximum visibility in the shortest time."
+        )
+        self._option_card(
+            "GEO Partner – Ongoing Optimization ($500/month)",
+            "After initial implementation, Peakweb monitors your AI visibility monthly, "
+            "publishes fresh content to maintain relevance signals, and adapts your strategy "
+            "as AI platforms evolve. Ensures you stay ahead of competitors long-term."
+        )
+        self._gap(8)
 
-        intro = "GEO optimization involves specialized technical work – structured data formats, AI crawler protocols, and platform-specific configurations that change frequently."
-        y = self._draw_text(intro, MARGIN, y, max_width=500)
-        y -= 25
+        self._h2("Expected Return on Investment")
+        self._gap(4)
 
-        # Pricing packages
-        packages = [
-            ("GEO Essentials – $1,000", "Peakweb handles all priority technical fixes, deploys AI configuration files, implements structured data, and validates your site across all major AI platforms. Includes 30-day post-launch monitoring."),
-            ("GEO Growth – $2,000–$3,000", "Everything in Essentials plus: authority-building across AI-indexed platforms, AI-optimized content creation, and a 90-day monitoring dashboard. Best for maximum visibility in the shortest time."),
-            ("GEO Partner – $500/month", "After initial implementation, Peakweb monitors your AI visibility monthly, publishes fresh content to maintain relevance signals, and adapts your strategy as AI platforms evolve."),
-        ]
+        self._stats_row([
+            (self.data.get('LEADS_PER_MONTH', '7–8'), "Additional Leads/Mo"),
+            (self.data.get('CUSTOMERS_PER_MONTH', '2–3'), "New Customers/Mo"),
+            (self.data.get('MONTHLY_REV', '$1K–6K'), "Add'l Monthly Rev"),
+            (self.data.get('ANNUAL_IMPACT', '$12–72K'), "Annual Impact"),
+        ])
+        self._gap(2)
 
-        for title, desc in packages:
-            self.c.setFillColorRGB(*DEEP_BLUE)
-            self.c.setFont(FONT_SEMIBOLD, 11)
-            self.c.drawString(MARGIN, y, title)
-            y -= 15
-            y = self._draw_text(desc, MARGIN, y, max_width=500, size=9)
-            y -= 20
+        self._callout(
+            "Break-even: Implementation pays for itself in the first month. Unlike one-time "
+            "marketing, these improvements keep working 24/7 with compounding returns."
+        )
+        self._gap(6)
 
-        # ROI Section
-        y -= 10
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 16)
-        self.c.drawString(MARGIN, y, "Expected Return on Investment")
-        y -= 35
-
-        # ROI metrics
-        metrics = [
-            (self.data.get('LEADS_PER_MONTH', '7-8'), "Additional Leads/Mo"),
-            (self.data.get('CUSTOMERS_PER_MONTH', '2-3'), "New Customers/Mo"),
-            (self.data.get('MONTHLY_REV', '$1K-6K'), "Add'l Monthly Rev"),
-            (self.data.get('ANNUAL_IMPACT', '$12-72K'), "Annual Impact"),
-        ]
-
-        x = MARGIN
-        for value, label in metrics:
-            self.c.setFillColorRGB(*AQUAMARINE)
-            self.c.setFont(FONT_SEMIBOLD, 20)
-            self.c.drawString(x, y, value)
-
-            self.c.setFillColorRGB(*DEEP_BLUE)
-            self.c.setFont(FONT_LIGHT, 8)
-            self.c.drawString(x, y - 15, label)
-
-            x += 125
+        self._h2("The Compounding Effect")
+        self._gap(2)
+        self._bullet("Month 1–3: Initial boost as AI systems discover updated content")
+        self._bullet("Month 4–6: Momentum builds as you add more content (blog, videos)")
+        self._bullet("Month 7–12: You become a recognized authority; AI systems cite you regularly")
+        self._bullet("Year 2+: Competitors struggle to catch up; you're the established AI-visible brand")
 
     def _page_9_seo_vs_geo(self):
-        """SEO vs GEO comparison page."""
-        self._new_page()
-        self._draw_header()
-        self._draw_footer()
+        """SEO vs GEO comparison page - matches build_pdf3.py p_comparison()."""
+        self._start_content_page()
 
-        y = PAGE_HEIGHT - 100
+        self._h1("Traditional SEO vs. GEO")
+        self._body(
+            'You might be thinking: "I already paid for SEO. Isn\'t this the same thing?" '
+            "The short answer is no. Here's how they compare:"
+        )
+        self._gap(6)
 
-        # Title
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 24)
-        self.c.drawString(MARGIN, y, "Traditional SEO vs. GEO")
-        y -= 30
+        self._table(
+            ["Traditional SEO", "GEO (AI Optimization)"],
+            [
+                ["Goal: Rank in Google's 10 blue links", "Goal: Get mentioned by ChatGPT / AI"],
+                ["Optimizes for keywords", "Optimizes for natural language questions"],
+                ["Success = page 1 ranking", "Success = AI recommendation"],
+                ["Works for Google search", "Works for ChatGPT, Perplexity, Google AI, Claude"],
+                ["Established practice (20+ years)", "Emerging practice (critical now)"],
+            ]
+        )
+        self._gap(4)
 
-        intro = 'You might be thinking: "I already paid for SEO. Isn\'t this the same thing?" The short answer is no. Here\'s how they compare:'
-        y = self._draw_text(intro, MARGIN, y, max_width=500)
-        y -= 30
+        self._callout(
+            "You need BOTH. Traditional SEO gets you found in Google. GEO gets you recommended "
+            "by AI. The catch: most SEO services don't include GEO yet. Early movers win."
+        )
+        self._gap(8)
 
-        # Comparison table
-        comparisons = [
-            ("Goal: Rank in Google's 10 blue links", "Goal: Get mentioned by ChatGPT / AI"),
-            ("Optimizes for keywords", "Optimizes for natural language questions"),
-            ("Success = page 1 ranking", "Success = AI recommendation"),
-            ("Works for Google search", "Works for ChatGPT, Perplexity, Google AI, Claude"),
-            ("Established practice (20+ years)", "Emerging practice (critical now)"),
-        ]
+        self._h2("Even If AI Search Stalls, You Still Win")
+        self._body("Every optimization in this audit also improves your traditional Google SEO:")
+        self._gap(3)
+        self._bullet("Star ratings increase click-through rates in Google results")
+        self._bullet("Fresh content with dates ranks better in Google search")
+        self._bullet("Case studies with data build authority and attract backlinks")
+        self._bullet("FAQ pages answer user questions and capture featured snippets")
+        self._bullet("Complete structured data helps Google understand your business")
+        self._gap(4)
 
-        # Headers
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 11)
-        self.c.drawString(MARGIN, y, "Traditional SEO")
-        self.c.drawString(MARGIN + 260, y, "GEO (AI Optimization)")
-        y -= 20
-
-        for seo, geo in comparisons:
-            self.c.setFont(FONT_LIGHT, 9)
-            self.c.drawString(MARGIN, y, seo)
-            self.c.drawString(MARGIN + 260, y, geo)
-            y -= 15
-
-        y -= 20
-
-        conclusion = "You need BOTH. Traditional SEO gets you found in Google. GEO gets you recommended by AI. The catch: most SEO services don't include GEO yet. Early movers win."
-        self._draw_callout_box(conclusion, MARGIN, y - 20, 500)
-        y -= 70
-
-        # Even If AI Stalls section
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 14)
-        self.c.drawString(MARGIN, y, "Even If AI Search Stalls, You Still Win")
-        y -= 20
-
-        still_win = "Every optimization in this audit also improves your traditional Google SEO:"
-        y = self._draw_text(still_win, MARGIN, y, max_width=500)
-        y -= 5
-
-        benefits = [
-            "Star ratings increase click-through rates in Google results",
-            "Fresh content with dates ranks better in Google search",
-            "Case studies with data build authority and attract backlinks",
-            "FAQ pages answer user questions and capture featured snippets",
-            "Complete structured data helps Google understand your business"
-        ]
-        y = self._draw_bullet_list(benefits, MARGIN, y, max_width=490)
-
-        y -= 10
-        self._draw_text("These are best practices regardless of AI. You literally can't lose.", MARGIN, y,
-                       font=FONT_SEMIBOLD, size=10)
+        self._callout("These are best practices regardless of AI. You literally can't lose.")
 
     def _page_10_before_after(self):
-        """Before/After + FAQ page."""
-        self._new_page()
-        self._draw_header()
-        self._draw_footer()
+        """Before/After + FAQ page - matches build_pdf3.py p_before_after()."""
+        self._start_content_page()
+        CW = PAGE_WIDTH - 2 * MARGIN
 
-        y = PAGE_HEIGHT - 100
+        self._h1("What This Looks Like in Practice")
+        self._gap(3)
+        self._body("Here's what happens when a potential customer asks an AI assistant for help:")
+        self._gap(8)
 
-        # Title
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 24)
-        self.c.drawString(MARGIN, y, "What This Looks Like in Practice")
-        y -= 30
-
-        intro = "Here's what happens when a potential customer asks an AI assistant for help:"
-        y = self._draw_text(intro, MARGIN, y, max_width=500)
-        y -= 25
-
-        # BEFORE box
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 12)
-        self.c.drawString(MARGIN, y, "BEFORE Optimization")
-        y -= 20
-
-        before_lines = [
-            self.data.get('BEFORE_LINE_1', ''),
-            self.data.get('BEFORE_LINE_2', ''),
-            self.data.get('BEFORE_LINE_3', ''),
-            self.data.get('BEFORE_LINE_4', ''),
-            self.data.get('BEFORE_LINE_5', ''),
+        # BEFORE box - red background
+        service = self.data.get('SERVICE_TYPE', 'services')
+        city = self.data.get('CITY', 'your area')
+        lines_before = [
+            f'Customer: "Who should I call for {service} in {city}?"',
+            '',
+            'AI Response: "Here are some well-reviewed options:',
+            '  – GreenCo Services (mentioned in multiple sources)',
+            '  – ProTech Solutions (4.8 stars, established since 2010)',
+            '  – Mountain View Pros (industry certified)"',
+            '',
+            'Your business: Not mentioned.',
         ]
-
-        self.c.setFont(FONT_LIGHT, 9)
-        for line in before_lines:
-            if line:
-                self.c.drawString(MARGIN + 15, y, line)
-                y -= 12
-
-        y -= 20
-
-        # AFTER box
+        bh = len(lines_before) * 12 + 30
+        self._need(bh + 8)
+        self.c.setFillColorRGB(*SOFT_RED_BG)
+        self.c.roundRect(MARGIN, self.y - bh, CW, bh, 5, fill=1, stroke=0)
+        self._draw_semibold_text(MARGIN + 14, self.y - 16, "BEFORE Optimization", 11, (0.8, 0.27, 0.27))
         self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 12)
-        self.c.drawString(MARGIN, y, "AFTER Optimization")
-        y -= 20
-
-        after_lines = [
-            self.data.get('AFTER_LINE_1', ''),
-            self.data.get('AFTER_LINE_2', ''),
-            self.data.get('AFTER_LINE_3', ''),
-            self.data.get('AFTER_LINE_4', ''),
-            self.data.get('AFTER_LINE_5', ''),
-            self.data.get('AFTER_LINE_6', ''),
-        ]
-
         self.c.setFont(FONT_LIGHT, 9)
-        for line in after_lines:
-            if line:
-                self.c.drawString(MARGIN + 15, y, line)
-                y -= 12
+        ty = self.y - 32
+        for ln in lines_before:
+            self.c.drawString(MARGIN + 14, ty, ln)
+            ty -= 12
+        self.y -= bh + 10
 
-        y -= 30
+        # AFTER box - green background
+        client_name = self.data.get('CLIENT_NAME', 'Your Business')
+        years = self.data.get('YEARS', '25+')
+        lines_after = [
+            f'Customer: "Who should I call for {service} in {city}?"',
+            '',
+            'AI Response: "Here are some well-reviewed options:',
+            f'  – {client_name} ({years} years experience, BBB A+,',
+            f'    serving {city}. Typical pricing $85–150)',
+            '  – GreenCo Services (mentioned in multiple sources)',
+            '  – ProTech Solutions (4.8 stars)"',
+            '',
+            'Your business: Mentioned FIRST with specific details and contact info.',
+        ]
+        bh = len(lines_after) * 12 + 30
+        self._need(bh + 8)
+        self.c.setFillColorRGB(*SOFT_GREEN_BG)
+        self.c.roundRect(MARGIN, self.y - bh, CW, bh, 5, fill=1, stroke=0)
+        self.c.setFillColorRGB(*AQUAMARINE)
+        self.c.rect(MARGIN, self.y - bh, 4, bh, fill=1, stroke=0)
+        self._draw_semibold_text(MARGIN + 14, self.y - 16, "AFTER Optimization", 11, MIDNIGHT_GREEN)
+        self.c.setFillColorRGB(*DEEP_BLUE)
+        self.c.setFont(FONT_LIGHT, 9)
+        ty = self.y - 32
+        for ln in lines_after:
+            self.c.drawString(MARGIN + 14, ty, ln)
+            ty -= 12
+        self.y -= bh + 8
+
+        self._callout(
+            "Same customer, same question. One scenario: they never hear about you. "
+            "The other: you're recommended first with supporting details. "
+            "How many customers asked this question last month and never heard your name?"
+        )
+        self._gap(8)
 
         # FAQs
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 16)
-        self.c.drawString(MARGIN, y, "Frequently Asked Questions")
-        y -= 25
+        self._h2("Frequently Asked Questions")
+        self._gap(3)
 
-        # FAQ 1
-        q1 = self.data.get('FAQ_1_Q', '')
-        a1 = self.data.get('FAQ_1_A', '')
-        if q1:
-            self.c.setFillColorRGB(*MIDNIGHT_GREEN)
-            self.c.setFont(FONT_SEMIBOLD, 10)
-            self.c.drawString(MARGIN, y, f'"{q1}"')
-            y -= 15
-            self.c.setFillColorRGB(*DEEP_BLUE)
-            y = self._draw_text(a1, MARGIN, y, max_width=500, size=9)
-            y -= 15
+        self._h3('"Is this really necessary? My business is doing fine."')
+        self._body(
+            "Your business IS doing fine – years of success proves that. But consider: "
+            "in 2005, businesses said \"I don't need a website.\" In 2010, \"I don't need Google reviews.\" "
+            "In 2015, \"I don't need social media.\" Those who adapted early dominated their markets. "
+            "AI search is the next shift.",
+            size=9.5
+        )
+        self._gap(4)
 
-        # FAQ 2
-        q2 = self.data.get('FAQ_2_Q', '')
-        a2 = self.data.get('FAQ_2_A', '')
-        if q2:
-            self.c.setFillColorRGB(*MIDNIGHT_GREEN)
-            self.c.setFont(FONT_SEMIBOLD, 10)
-            self.c.drawString(MARGIN, y, f'"{q2}"')
-            y -= 15
-            self.c.setFillColorRGB(*DEEP_BLUE)
-            self._draw_text(a2, MARGIN, y, max_width=500, size=9)
+        self._h3('"How long will these changes stay relevant?"')
+        self._body(
+            "The technical foundation we build is permanent – it doesn't expire or need replacing. "
+            "Content assets (guides, FAQs, case studies) appreciate over time and keep driving leads "
+            "for years. That said, AI platforms evolve quickly, which is why ongoing monitoring matters. "
+            "Peakweb's GEO Partner plan keeps you current as the landscape shifts.",
+            size=9.5
+        )
 
     def _page_11_next_steps(self):
-        """Next Steps + Bottom Line page."""
-        self._new_page()
-        self._draw_header()
-        self._draw_footer()
+        """Next Steps + Bottom Line page - matches build_pdf3.py p_next_steps()."""
+        self._start_content_page()
+        CW = PAGE_WIDTH - 2 * MARGIN
 
-        y = PAGE_HEIGHT - 100
+        self._h1("Next Steps")
+        self._gap(3)
 
-        # Title
+        self._numbered(1, "Schedule a 30-Minute Strategy Call with Peakweb",
+            "We'll walk through this audit together, answer your questions, and "
+            "recommend the right engagement level for your goals and budget.")
+        self._numbered(2, "Choose Your Implementation Package",
+            "GEO Essentials ($1,000) for priority technical fixes, GEO Growth "
+            "($2,000–$3,000) for the full 30-day roadmap, or GEO Partner ($500/mo) for ongoing optimization.")
+        self._numbered(3, "Gather Your Business Content",
+            "While Peakweb handles the technical side, you'll want to have project photos, "
+            "customer stories, and service details ready. We'll send you a simple content checklist.")
+        self._numbered(4, "Implementation Begins",
+            "Peakweb deploys changes in the sequence outlined in our 30-day roadmap, "
+            "with check-ins at each milestone so you always know what's happening.")
+        self._numbered(5, "Track Results Together",
+            "We'll monitor your visibility across ChatGPT, Perplexity, Google AI, and Claude – "
+            "and provide monthly reports showing your score improvement and lead impact.")
+
+        self._gap(10)
+
+        # The Bottom Line box
+        years = self.data.get('YEARS', '25')
+        bh = 85
+        self._need(bh + 10)
         self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 24)
-        self.c.drawString(MARGIN, y, "Next Steps")
-        y -= 35
+        self.c.roundRect(MARGIN, self.y - bh, CW, bh, 6, fill=1, stroke=0)
 
-        steps = [
-            ("1", "Schedule a 30-Minute Strategy Call", "We'll walk through this audit together, answer your questions, and recommend the right engagement level for your goals and budget."),
-            ("2", "Choose Your Implementation Package", "GEO Essentials ($1,000) for priority technical fixes, GEO Growth ($2,000–$3,000) for the full 30-day roadmap, or GEO Partner ($500/mo) for ongoing optimization."),
-            ("3", "Gather Your Business Content", "While Peakweb handles the technical side, you'll want to have project photos, customer stories, and service details ready."),
-            ("4", "Implementation Begins", "Peakweb deploys changes in the sequence outlined in our 30-day roadmap, with check-ins at each milestone."),
-            ("5", "Track Results Together", "We'll monitor your visibility across ChatGPT, Perplexity, Google AI, and Claude – and provide monthly reports."),
-        ]
+        # Centered title
+        self.c.setFillColorRGB(*AQUAMARINE)
+        self.c.setFont(FONT_SEMIBOLD, 16)
+        self.c.drawCentredString(PAGE_WIDTH / 2, self.y - 22, "The Bottom Line")
 
-        for num, title, desc in steps:
-            # Number
-            self.c.setFillColorRGB(*AQUAMARINE)
-            self.c.circle(MARGIN + 10, y + 5, 12, fill=1, stroke=0)
-            self.c.setFillColorRGB(*DEEP_BLUE)
-            self.c.setFont(FONT_SEMIBOLD, 11)
-            self.c.drawCentredString(MARGIN + 10, y + 1, num)
-
-            # Title
-            self.c.setFont(FONT_SEMIBOLD, 11)
-            self.c.drawString(MARGIN + 35, y + 5, title)
-
-            # Description
-            y = self._draw_text(desc, MARGIN + 35, y - 10, max_width=460, size=9)
-            y -= 20
-
-        y -= 20
-
-        # The Bottom Line
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 18)
-        self.c.drawString(MARGIN, y, "The Bottom Line")
-        y -= 25
-
-        line1 = self.data.get('BOTTOM_LINE_1', "You've built an excellent business.")
+        # Centered text
+        self.c.setFillColorRGB(*WHITE)
+        self.c.setFont(FONT_LIGHT, 10)
+        line1 = self.data.get('BOTTOM_LINE_1', f"You've built an excellent business over {years} years.")
         line2 = self.data.get('BOTTOM_LINE_2', "The only thing holding you back is that AI systems don't know about it yet.")
+        self.c.drawCentredString(PAGE_WIDTH / 2, self.y - 42, line1)
+        self.c.drawCentredString(PAGE_WIDTH / 2, self.y - 56, line2)
 
-        self.c.setFont(FONT_LIGHT, 11)
-        self.c.drawString(MARGIN, y, line1)
-        y -= 16
-        self.c.drawString(MARGIN, y, line2)
-        y -= 25
-
+        # Closer
         closer = self.data.get('BOTTOM_LINE_CLOSER', "Let's fix that.")
         self.c.setFillColorRGB(*AQUAMARINE)
-        self.c.setFont(FONT_SEMIBOLD, 14)
-        self.c.drawString(MARGIN, y, closer)
+        self.c.setFont(FONT_SEMIBOLD, 12)
+        self.c.drawCentredString(PAGE_WIDTH / 2, self.y - 74, closer)
 
     def _page_12_cta(self):
         """Final CTA page."""
