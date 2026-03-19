@@ -41,6 +41,9 @@ MIDNIGHT_GREEN = (10/255, 62/255, 60/255)    # #0A3E3C
 LILAC = (152/255, 146/255, 181/255)          # #9892B5
 STONE = (252/255, 247/255, 230/255)          # #FCF7E6
 WHITE = (1, 1, 1)
+AMBER = (245/255, 166/255, 35/255)           # #F5A623 - warning/low scores
+SCORE_BAR_BG = (232/255, 236/255, 240/255)   # #E8ECF0 - score bar background
+WARN_BG = (255/255, 248/255, 230/255)        # #FFF8E6 - warning callout background
 LIGHT_BLUE_BG = (26/255, 74/255, 110/255)    # #1a4a6e - info box background
 MUTED_BLUE = (148/255, 184/255, 204/255)     # #94b8cc - labels and "Confidential"
 
@@ -345,38 +348,50 @@ class PitchDeckGenerator:
 
         return y
 
-    def _draw_progress_bar(self, score, x, y, width=200, height=12):
-        """Draw a horizontal progress bar."""
-        # Background
-        self.c.setFillColorRGB(0.85, 0.85, 0.85)
-        self.c.rect(x, y, width, height, fill=1, stroke=0)
+    def _draw_progress_bar(self, score, x, y, width=200, height=22):
+        """Draw a horizontal progress bar with rounded corners - matches build_pdf3.py score_bar()."""
+        # Background - rounded rectangle
+        self.c.setFillColorRGB(*SCORE_BAR_BG)
+        self.c.roundRect(x, y, width, height, 11, fill=1, stroke=0)
 
-        # Fill based on score
-        if score >= 75:
-            fill_color = AQUAMARINE
-        elif score >= 50:
-            fill_color = (1, 0.8, 0)  # Yellow
-        else:
-            fill_color = (0.9, 0.3, 0.3)  # Red
-
+        # Fill based on score - AMBER for < 60, AQUAMARINE for >= 60
+        fill_color = AMBER if score < 60 else AQUAMARINE
         fill_width = width * (score / 100)
         self.c.setFillColorRGB(*fill_color)
-        self.c.rect(x, y, fill_width, height, fill=1, stroke=0)
+        self.c.roundRect(x, y, fill_width, height, 11, fill=1, stroke=0)
 
-    def _draw_callout_box(self, text, x, y, width, color=AQUAMARINE):
-        """Draw a callout box with left border."""
-        # Left border
-        self.c.setFillColorRGB(*color)
-        self.c.rect(x, y - 5, 4, 30, fill=1, stroke=0)
+    def _draw_callout_box(self, text, x, y, width, bg=STONE, border=AQUAMARINE):
+        """Draw a callout box with background and left border - matches build_pdf3.py callout()."""
+        size = 9.5
+        self.c.setFont(FONT_LIGHT, size)
+        cpl = int((width - 30) / (size * 0.475))
+        lines = textwrap.wrap(text, width=cpl)
+        lh = size + 4
+        text_block_h = len(lines) * lh
+        padding = 12
+        bh = text_block_h + padding * 2
+        if bh < 36:
+            bh = 36
 
-        # Text
+        # Box background with rounded corners
+        box_bottom = y - bh + 8
+        self.c.setFillColorRGB(*bg)
+        self.c.roundRect(x, box_bottom, width, bh, 4, fill=1, stroke=0)
+
+        # Left accent border
+        self.c.setFillColorRGB(*border)
+        self.c.rect(x, box_bottom, 4, bh, fill=1, stroke=0)
+
+        # Vertically centered text
+        box_centre_y = box_bottom + bh / 2
+        baseline_span = (len(lines) - 1) * lh
+        text_start_y = box_centre_y + baseline_span / 2 - size * 0.2
         self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_LIGHT, 9.5)
-        lines = self._wrap_text(text, FONT_LIGHT, 9.5, width - 20)
-        text_y = y + 15
-        for line in lines:
-            self.c.drawString(x + 15, text_y, line)
-            text_y -= 12
+        self.c.setFont(FONT_LIGHT, size)
+        ty = text_start_y
+        for ln in lines:
+            self.c.drawString(x + 16, ty, ln)
+            ty -= lh
 
     # =========================================================================
     # Page Rendering Methods
@@ -612,20 +627,13 @@ class PitchDeckGenerator:
         )
 
     def _page_3_current_score(self):
-        """Your Current Score page."""
-        self._new_page()
-        self._draw_header()
-        self._draw_footer()
+        """Your Current Score page - matches build_pdf3.py p_score()."""
+        self._start_content_page()
 
-        y = PAGE_HEIGHT - 100
+        self._h1("Your Current Score")
+        self._gap(4)
 
-        # Title
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 24)
-        self.c.drawString(MARGIN, y, "Your Current Score")
-        y -= 50
-
-        # Score display
+        # Score bar and number - matches build_pdf3.py score_bar()
         score = self.data.get('GEO_SCORE', 53)
         if isinstance(score, str):
             try:
@@ -633,34 +641,32 @@ class PitchDeckGenerator:
             except:
                 score = 53
 
-        # Progress bar
-        self._draw_progress_bar(score, MARGIN, y, width=300, height=15)
-
-        # Score number
+        CW = PAGE_WIDTH - 2 * MARGIN
+        gw = CW * 0.65
+        gh = 22
+        gx = MARGIN
+        gy = self.y - 6
+        # Draw the progress bar
+        self._draw_progress_bar(score, gx, gy, width=gw, height=gh)
+        # Score number to the right
         self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 36)
-        self.c.drawString(MARGIN + 350, y - 5, str(score))
-        self.c.setFont(FONT_LIGHT, 16)
-        self.c.drawString(MARGIN + 400, y - 5, "/ 100")
-        y -= 50
+        self.c.setFont(FONT_SEMIBOLD, 28)
+        self.c.drawString(gx + gw + 14, gy - 4, str(score))
+        self.c.setFont(FONT_LIGHT, 14)
+        self.c.drawString(gx + gw + 50, gy, "/ 100")
+        self.y -= 42
 
-        # Score label and description
+        # Score label callout with warning styling
         score_label = self.data.get('SCORE_LABEL', 'FAIR')
-        score_desc = self.data.get('SCORE_DESCRIPTION', '')
-
-        self.c.setFont(FONT_SEMIBOLD, 11)
-        self.c.drawString(MARGIN, y, f"{score_label} – ")
-        label_width = self.c.stringWidth(f"{score_label} – ", FONT_SEMIBOLD, 11)
-        self.c.setFont(FONT_LIGHT, 10)
-        y = self._draw_text(score_desc, MARGIN + label_width, y, max_width=480 - label_width)
-        y -= 20
+        score_desc = self.data.get('SCORE_DESCRIPTION',
+            "Your website is functional but not optimized for AI systems. "
+            "AI search engines can access your site but rarely cite or recommend it. "
+            "You're not invisible, but you're not competing effectively.")
+        self._callout(f"{score_label} – {score_desc}", bg=WARN_BG, border=AMBER)
+        self._gap(6)
 
         # What's Working Well
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 14)
-        self.c.drawString(MARGIN, y, "What's Working Well")
-        y -= 20
-
+        self._h2("What's Working Well")
         working = [
             self.data.get('WORKING_1', ''),
             self.data.get('WORKING_2', ''),
@@ -668,36 +674,34 @@ class PitchDeckGenerator:
             self.data.get('WORKING_4', ''),
             self.data.get('WORKING_5', ''),
         ]
-        working = [w for w in working if w]
-        y = self._draw_bullet_list(working, MARGIN, y, max_width=490)
-        y -= 10
+        for w in working:
+            if w:
+                self._bullet(w)
+        self._gap(6)
 
-        # Callout
-        callout = "The foundation is solid. Peakweb's job is to make AI systems notice it."
-        self._draw_callout_box(callout, MARGIN, y - 20, 490)
-        y -= 60
+        # Foundation callout
+        self._callout("The foundation is solid. Peakweb's job is to make AI systems notice it.")
+        self._gap(8)
 
         # What This Means For Your Business
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 14)
-        self.c.drawString(MARGIN, y, "What This Means For Your Business")
-        y -= 20
-
+        self._h2("What This Means For Your Business")
         city = self.data.get('CITY', 'your area')
         industry = self.data.get('INDUSTRY', 'your industry')
         service_plural = self.data.get('SERVICE_TYPE_PLURAL', 'services')
-
-        means_intro = f"When AI systems answer questions about {city} {industry} or {service_plural}, they rarely mention your business. This means:"
-        y = self._draw_text(means_intro, MARGIN, y, max_width=500)
-        y -= 5
+        self._body(
+            f"When AI systems answer questions about {city} {industry} or {service_plural}, "
+            "they rarely mention your business. This means:"
+        )
+        self._gap(3)
 
         means = [
             self.data.get('MEANS_1', ''),
             self.data.get('MEANS_2', ''),
             self.data.get('MEANS_3', ''),
         ]
-        means = [m for m in means if m]
-        self._draw_bullet_list(means, MARGIN, y, max_width=490)
+        for m in means:
+            if m:
+                self._bullet(m)
 
     def _page_4_issues_1_to_3(self):
         """Issues 1-3 page."""
