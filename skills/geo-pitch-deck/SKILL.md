@@ -200,11 +200,17 @@ Structure the extracted data as JSON for the PDF generator:
 
 ### Step 4: Generate PDF
 
-Run the pitch deck generator script:
+Run the template-filling script (uses the actual Peakweb template PDF as base):
 
 ```bash
-python3 scripts/generate_pitch_deck.py /tmp/pitch-deck-data.json "PeakwebGEOProposal-{ClientName}.pdf"
+python3 scripts/fill_pitch_deck_template.py /tmp/pitch-deck-data.json "PeakwebGEOProposal-{ClientName}.pdf"
 ```
+
+This script:
+1. Opens the template PDF (`examples/peakweb/PeakwebGEOProposal-Template.pdf`)
+2. Finds all `{{PLACEHOLDER}}` text
+3. Redacts the placeholder text and fills in values from the JSON
+4. Preserves all original design, styling, graphics, and colors
 
 ### Step 5: Return Results
 

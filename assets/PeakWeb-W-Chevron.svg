@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="1030 430 280 270">
+  <defs>
+    <style>
+      .st0 { fill: #01efa0; }
+    </style>
+  </defs>
+  <!-- W chevron extracted from PeakWeb logo -->
+  <path class="st0" d="M1296.92,520.02l-99.58,166.36-26.05-43.25,99.63-166.29,26.01,43.18ZM1178.03,476.89l-98.4,164.24,26.02,43.2,98.36-164.31-25.98-43.13ZM1085.86,478.13l-52.07,86.91,26,43.16,52.04-86.94-25.98-43.12Z"/>
+</svg>
