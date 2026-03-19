@@ -466,14 +466,40 @@ class PitchDeckGenerator:
         """Draw stats row with large values and labels - matches build_pdf3.py stats_row()."""
         self._need(55)
         CW = PAGE_WIDTH - 2 * MARGIN
-        w = CW / len(items)
+
+        # Calculate actual widths needed at font size 24
+        font_size = 24
+        label_font_size = 8.5
+        padding = 12  # minimum padding between items
+
+        # Calculate widths for both values and labels, use max of each pair
+        val_widths = [self.c.stringWidth(str(val), FONT_SEMIBOLD, font_size) for val, lab in items]
+        lab_widths = [self.c.stringWidth(lab, FONT_LIGHT, label_font_size) for val, lab in items]
+        col_widths = [max(vw, lw) for vw, lw in zip(val_widths, lab_widths)]
+        total_needed = sum(col_widths) + padding * (len(items) - 1)
+
+        # If content is too wide, reduce font size
+        while total_needed > CW and font_size > 14:
+            font_size -= 2
+            val_widths = [self.c.stringWidth(str(val), FONT_SEMIBOLD, font_size) for val, lab in items]
+            col_widths = [max(vw, lw) for vw, lw in zip(val_widths, lab_widths)]
+            total_needed = sum(col_widths) + padding * (len(items) - 1)
+
+        # Calculate positions - distribute extra space evenly
+        extra_space = CW - total_needed
+        gap = extra_space / (len(items) + 1)  # space at edges and between items
+
+        x = MARGIN + gap
         for i, (val, lab) in enumerate(items):
-            cx = MARGIN + i * w + w / 2
-            val_width = self.c.stringWidth(val, FONT_SEMIBOLD, 24)
-            self._draw_semibold_text(cx - val_width / 2, self.y, val, 24, AQUAMARINE)
+            col_w = col_widths[i]
+            cx = x + col_w / 2
+            # Center the value within the column
+            val_w = val_widths[i]
+            self._draw_semibold_text(cx - val_w / 2, self.y, str(val), font_size, AQUAMARINE)
             self.c.setFillColorRGB(*DEEP_BLUE)
-            self.c.setFont(FONT_LIGHT, 8.5)
+            self.c.setFont(FONT_LIGHT, label_font_size)
             self.c.drawCentredString(cx, self.y - 16, lab)
+            x += col_w + gap + padding
         self.y -= 42
 
     def _option_card(self, title, desc):
@@ -1132,9 +1158,11 @@ class PitchDeckGenerator:
         self._gap(4)
 
         score = self.data.get('GEO_SCORE', 53)
-        projected = self.data.get('PROJECTED', '79+')
-        if '/' in str(projected):
-            projected = str(projected).replace('/100', '+')
+        projected = str(self.data.get('PROJECTED', '79+'))
+        if '/' in projected:
+            projected = projected.replace('/100', '+')
+        if projected.isdigit():
+            projected = projected + "+"
 
         self._stats_row([
             (str(score), "Current Score"),
