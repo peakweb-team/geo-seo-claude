@@ -554,6 +554,51 @@ This audit is your roadmap to change that — with specific fixes, clear timelin
 
 ---
 
+## File Organization
+
+All audit artifacts must be saved to a **domain-specific folder** under the audits directory.
+
+### Directory Structure
+
+```
+~/.geo-prospects/audits/
+└── {domain}/                          # e.g., example.com
+    ├── GEO-AUDIT-REPORT.md           # Final technical report
+    ├── CLIENT-REPORT.md              # Business-friendly report
+    ├── technical-seo-audit.md        # Subagent: geo-technical
+    ├── schema-audit.md               # Subagent: geo-schema
+    ├── platform-analysis.md          # Subagent: geo-platform-analysis
+    ├── content-quality-report.md     # Subagent: geo-content
+    ├── ai-visibility-report.md       # Subagent: geo-ai-visibility
+    └── pitch-deck-data.json          # Optional: for pitch deck generation
+```
+
+### Workflow
+
+1. **Create the domain folder first:**
+   ```bash
+   mkdir -p ~/.geo-prospects/audits/{domain}
+   ```
+
+2. **Pass the output path to all subagents:**
+   When delegating to subagents, include this instruction:
+   > Save your report to `~/.geo-prospects/audits/{domain}/{report-name}.md`
+
+3. **Save final reports to the same folder:**
+   Both `GEO-AUDIT-REPORT.md` and `CLIENT-REPORT.md` go in the domain folder.
+
+### Example
+
+For auditing `thebreakfastqueen.com`:
+```bash
+mkdir -p ~/.geo-prospects/audits/thebreakfastqueen.com
+```
+
+Subagent prompts should include:
+> Save your report to `~/.geo-prospects/audits/thebreakfastqueen.com/technical-seo-audit.md`
+
+---
+
 ## Quality Gates
 
 - **Page Limit:** Never crawl more than 50 pages per audit. Prioritize high-value pages.
