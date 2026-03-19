@@ -26,6 +26,17 @@ Traditional SEO optimizes for search engine rankings. GEO optimizes for AI citat
 
 ### Phase 1: Discovery and Reconnaissance
 
+**Step 0: Create Output Directory (REQUIRED FIRST)**
+
+Before any other work, create the domain-specific output folder:
+
+```bash
+# Extract domain from URL (e.g., https://example.com/page → example.com)
+mkdir -p ~/.geo-prospects/audits/{domain}
+```
+
+All subsequent files (subagent reports, final reports, JSON data) MUST be saved to this folder.
+
 **Step 1: Fetch Homepage and Detect Business Type**
 
 1. Use WebFetch to retrieve the homepage at the provided URL.
@@ -85,6 +96,9 @@ For each page in the crawl set, record:
 ### Phase 2: Parallel Subagent Delegation
 
 Delegate analysis to 5 specialized subagents. Each subagent operates on the collected page data and produces a category score (0-100) plus findings.
+
+**IMPORTANT:** When spawning each subagent, include the output path in the prompt:
+> Save your report to `~/.geo-prospects/audits/{domain}/{report-name}.md`
 
 **Subagent 1: AI Citability Analysis (geo-citability)**
 - Analyze content blocks for quotability by AI systems
