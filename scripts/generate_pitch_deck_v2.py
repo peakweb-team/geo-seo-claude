@@ -281,6 +281,18 @@ class PitchDeckGenerator:
         """Add vertical gap."""
         self.y -= h
 
+    def _truncate_text(self, text, font, size, max_width):
+        """Truncate text with ellipsis if it exceeds max_width."""
+        if not text:
+            return text
+        self.c.setFont(font, size)
+        if self.c.stringWidth(text, font, size) <= max_width:
+            return text
+        # Truncate and add ellipsis
+        while len(text) > 0 and self.c.stringWidth(text + "…", font, size) > max_width:
+            text = text[:-1]
+        return text.rstrip() + "…"
+
     def _numbered(self, num, title, desc):
         """Draw numbered item with circle - matches build_pdf3.py numbered()."""
         self._need(40)
@@ -542,9 +554,19 @@ class PitchDeckGenerator:
 
         # Client info box - from reference: iy = PH - 370, bh = 110
         iy = PAGE_HEIGHT - 370
-        bh = 110
         box_x = MARGIN
         box_width = PAGE_WIDTH - 2 * MARGIN
+        left_pad = 18
+        right_col = box_x + box_width / 2 + 10
+        left_col_width = box_width / 2 - left_pad - 10
+
+        # Check if contact name needs wrapping (before drawing box)
+        contact_name = self.data.get('CONTACT_NAME, TITLE', '')
+        self.c.setFont(FONT_LIGHT, 13)
+        wrapped = self.c.stringWidth(contact_name, FONT_LIGHT, 13) > left_col_width
+
+        # Adjust box height if wrapped
+        bh = 125 if wrapped else 110
 
         # Light blue background - #1a4a6e from reference
         self.c.setFillColorRGB(*LIGHT_BLUE_BG)
@@ -554,20 +576,29 @@ class PitchDeckGenerator:
         self.c.setFillColorRGB(*AQUAMARINE)
         self.c.rect(box_x, iy - bh, 4, bh, fill=1, stroke=0)
 
-        # Labels use MUTED_BLUE color (from reference)
-        left_pad = 18
-        right_col = box_x + box_width / 2 + 10
-
         # PREPARED FOR
         self.c.setFillColorRGB(*MUTED_BLUE)
         self.c.setFont(FONT_LIGHT, 8)
         self.c.drawString(box_x + left_pad, iy - 18, "PREPARED FOR")
 
+        # Contact name (already have contact_name and wrapped from above)
         self.c.setFillColorRGB(*WHITE)
         self.c.setFont(FONT_LIGHT, 13)
-        self.c.drawString(box_x + left_pad, iy - 35, self.data.get('CONTACT_NAME, TITLE', ''))
-        self.c.setFont(FONT_LIGHT, 11)
-        self.c.drawString(box_x + left_pad, iy - 52, self.data.get('CLIENT_NAME', ''))
+
+        if wrapped:
+            # Wrap to 2 lines
+            cpl = int(left_col_width / (13 * 0.5))  # chars per line estimate
+            lines = textwrap.wrap(contact_name, width=cpl)
+            self.c.drawString(box_x + left_pad, iy - 32, lines[0] if lines else '')
+            if len(lines) > 1:
+                self.c.drawString(box_x + left_pad, iy - 47, lines[1])
+            # Client name shifts down
+            self.c.setFont(FONT_LIGHT, 11)
+            self.c.drawString(box_x + left_pad, iy - 64, self.data.get('CLIENT_NAME', ''))
+        else:
+            self.c.drawString(box_x + left_pad, iy - 35, contact_name)
+            self.c.setFont(FONT_LIGHT, 11)
+            self.c.drawString(box_x + left_pad, iy - 52, self.data.get('CLIENT_NAME', ''))
 
         # WEBSITE (right side)
         self.c.setFillColorRGB(*MUTED_BLUE)
@@ -578,14 +609,15 @@ class PitchDeckGenerator:
         self.c.setFont(FONT_LIGHT, 11)
         self.c.drawString(right_col, iy - 35, self.data.get('CLIENT_WEBSITE', ''))
 
-        # DATE
+        # DATE - add extra padding when contact name wrapped
+        date_y = iy - 85 if wrapped else iy - 72
         self.c.setFillColorRGB(*MUTED_BLUE)
         self.c.setFont(FONT_LIGHT, 8)
-        self.c.drawString(box_x + left_pad, iy - 72, "DATE")
+        self.c.drawString(box_x + left_pad, date_y, "DATE")
 
         self.c.setFillColorRGB(*WHITE)
         self.c.setFont(FONT_LIGHT, 11)
-        self.c.drawString(box_x + left_pad, iy - 88, self.data.get('REPORT_DATE', ''))
+        self.c.drawString(box_x + left_pad, date_y - 16, self.data.get('REPORT_DATE', ''))
 
         # W icon - from reference: self.w_icon(PW - 235, 50, size=260)
         self._draw_w_icon(PAGE_WIDTH - 235, 50, size=260)
@@ -1252,7 +1284,6 @@ class PitchDeckGenerator:
         self._gap(10)
 
         # The Bottom Line box
-        years = self.data.get('YEARS', '25')
         bh = 85
         self._need(bh + 10)
         self.c.setFillColorRGB(*DEEP_BLUE)
@@ -1266,7 +1297,7 @@ class PitchDeckGenerator:
         # Centered text
         self.c.setFillColorRGB(*WHITE)
         self.c.setFont(FONT_LIGHT, 10)
-        line1 = self.data.get('BOTTOM_LINE_1', f"You've built an excellent business over {years} years.")
+        line1 = self.data.get('BOTTOM_LINE_1', "You've built an excellent business.")
         line2 = self.data.get('BOTTOM_LINE_2', "The only thing holding you back is that AI systems don't know about it yet.")
         self.c.drawCentredString(PAGE_WIDTH / 2, self.y - 42, line1)
         self.c.drawCentredString(PAGE_WIDTH / 2, self.y - 56, line2)
@@ -1353,7 +1384,7 @@ SAMPLE_DATA = {
 
     "ISSUE_1_TITLE": "Wix Sites Are Nearly Invisible to AI",
     "ISSUE_1_BODY": "Wix uses JavaScript rendering which many AI crawlers can't process. Your content may be invisible to ChatGPT, Claude, and others.",
-    "ISSUE_1_CALLOUT": "Impact: AI systems may see a blank page instead of your 23 years of expertise",
+    "ISSUE_1_CALLOUT": "Impact: AI systems may see a blank page instead of your years of expertise",
 
     "ISSUE_2_TITLE": "No Structured Data for AI to Parse",
     "ISSUE_2_BODY": "Your site has zero schema markup. AI systems don't know you're a LocalBusiness, what services you offer, or your specializations.",
@@ -1377,7 +1408,7 @@ SAMPLE_DATA = {
 
     "NOTHING_SHORT_1": "Hunters asking AI for taxidermist recommendations won't hear your name",
     "NOTHING_SHORT_2": "Competitors who optimize will capture the growing AI search market",
-    "NOTHING_SHORT_3": "Your 23 years of expertise remain invisible to 30-40% of potential customers",
+    "NOTHING_SHORT_3": "Your years of expertise remain invisible to 30-40% of potential customers",
 
     "NOTHING_LONG_1": "AI search becomes the primary way hunters find taxidermists",
     "NOTHING_LONG_2": "The gap between you and AI-optimized competitors becomes insurmountable",
@@ -1419,7 +1450,7 @@ SAMPLE_DATA = {
     "FAQ_2_Q": "How long until I see results?",
     "FAQ_2_A": "Technical fixes show impact in 2-4 weeks. Building authority takes 2-3 months. Full optimization typically reaches target score in 90 days.",
 
-    "BOTTOM_LINE_1": "You've built a stellar reputation over 23 years.",
+    "BOTTOM_LINE_1": "You've built a stellar reputation as a master taxidermist.",
     "BOTTOM_LINE_2": "AI systems just don't know about it yet.",
     "BOTTOM_LINE_CLOSER": "Let's change that.",
 }
