@@ -10,6 +10,7 @@ import json
 import math
 import os
 import sys
+import textwrap
 from datetime import datetime
 
 from reportlab.lib import colors
@@ -97,6 +98,7 @@ class PitchDeckGenerator:
         self.output_path = output_path
         self.c = None
         self.page_num = 0
+        self.y = PAGE_HEIGHT - MARGIN  # Current y position for content
 
     def generate(self):
         """Generate the complete pitch deck."""
@@ -124,7 +126,7 @@ class PitchDeckGenerator:
     # Helper Methods
     # =========================================================================
 
-    def _new_page(self, bg_color=STONE):
+    def _new_page(self, bg_color=WHITE):
         """Start a new page with background color."""
         if self.page_num > 0:
             self.c.showPage()
@@ -135,31 +137,144 @@ class PitchDeckGenerator:
         self.c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, fill=1, stroke=0)
 
     def _draw_header(self, show_logo=True):
-        """Draw page header with logo."""
-        # Header bar
+        """Draw page header with logo - matches build_pdf3.py page() method."""
+        # Header bar - 42pt high (from reference)
+        hdr_h = 42
         self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.rect(0, PAGE_HEIGHT - 60, PAGE_WIDTH, 60, fill=1, stroke=0)
+        self.c.rect(0, PAGE_HEIGHT - hdr_h, PAGE_WIDTH, hdr_h, fill=1, stroke=0)
 
+        # Logo - small version in header
+        # Our PNG is 8000x4500 (1.78:1 ratio) - taller than the reference's 5:1 logo
+        # Center it vertically in header bar; overflow will be clipped
         if show_logo and os.path.exists(LOGO_PATH):
-            # Draw logo
-            self.c.drawImage(LOGO_PATH, MARGIN, PAGE_HEIGHT - 50,
-                           width=100, height=30, preserveAspectRatio=True, mask='auto')
+            logo_w = 100
+            logo_h = logo_w * (4500 / 8000)  # ≈ 56
+            # Center vertically in header bar
+            logo_y = PAGE_HEIGHT - hdr_h + (hdr_h - logo_h) / 2
+            self.c.drawImage(LOGO_PATH, MARGIN, logo_y,
+                           width=logo_w, height=logo_h, mask='auto')
+
+        # Green accent line below header (3pt)
+        self.c.setFillColorRGB(*AQUAMARINE)
+        self.c.rect(0, PAGE_HEIGHT - hdr_h - 3, PAGE_WIDTH, 3, fill=1, stroke=0)
 
     def _draw_footer(self):
-        """Draw page footer."""
-        # Footer bar
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.rect(0, 0, PAGE_WIDTH, 50, fill=1, stroke=0)
+        """Draw page footer - matches build_pdf3.py page() method."""
+        # Accent line above footer text (1pt, spans content width)
+        CW = PAGE_WIDTH - 2 * MARGIN
+        self.c.setFillColorRGB(*AQUAMARINE)
+        self.c.rect(MARGIN, 42, CW, 1, fill=1, stroke=0)
 
         # Footer text
-        self.c.setFillColorRGB(*WHITE)
+        self.c.setFillColorRGB(*DEEP_BLUE)
         self.c.setFont(FONT_LIGHT, 8)
-        self.c.drawString(MARGIN, 20, "Peakweb | peakweb.io")
-        self.c.drawRightString(PAGE_WIDTH - MARGIN, 20, f"Page {self.page_num}")
+        self.c.drawString(MARGIN, 28, "Peakweb  |  peakweb.io")
+        self.c.drawRightString(PAGE_WIDTH - MARGIN, 28, f"Page {self.page_num}")
 
-        # Confidential
-        self.c.setFillColorRGB(*LILAC)
-        self.c.drawCentredString(PAGE_WIDTH / 2, 20, "Confidential")
+    def _start_content_page(self):
+        """Start a new content page with header, footer, and proper y position."""
+        # Reference uses white background for content pages (no explicit fill)
+        self._new_page(bg_color=WHITE)
+        self._draw_header()
+        self._draw_footer()
+        # Content starts below header (42pt bar + 3pt accent + margin)
+        self.y = PAGE_HEIGHT - MARGIN - 55
+
+    def _need(self, h):
+        """Check if we need a new page for content of height h."""
+        if self.y - h < 65:  # Footer area
+            self._start_content_page()
+
+    def _h1(self, text):
+        """Draw H1 heading with accent line - matches build_pdf3.py h1()."""
+        self._need(50)
+        self.y -= 18
+        self._draw_semibold_text(MARGIN, self.y, text, 22, DEEP_BLUE)
+        self.y -= 9
+        # Accent line
+        self.c.setFillColorRGB(*AQUAMARINE)
+        self.c.rect(MARGIN, self.y, 60, 3, fill=1, stroke=0)
+        self.y -= 18
+
+    def _h2(self, text, color=DEEP_BLUE):
+        """Draw H2 heading - matches build_pdf3.py h2()."""
+        self._need(36)
+        self.y -= 14
+        self._draw_semibold_text(MARGIN, self.y, text, 14, color)
+        self.y -= 18
+
+    def _h3(self, text, color=MIDNIGHT_GREEN):
+        """Draw H3 heading - matches build_pdf3.py h3()."""
+        self._need(28)
+        self.y -= 10
+        self._draw_semibold_text(MARGIN, self.y, text, 11, color)
+        self.y -= 14
+
+    def _body(self, text, indent=0, size=10, color=DEEP_BLUE):
+        """Draw body text with wrapping - matches build_pdf3.py body()."""
+        CW = PAGE_WIDTH - 2 * MARGIN
+        self.c.setFillColorRGB(*color)
+        self.c.setFont(FONT_LIGHT, size)
+        cpl = int((CW - indent) / (size * 0.475))  # chars per line
+        lh = size + 4  # line height
+        for para in text.split('\n'):
+            if not para.strip():
+                self.y -= lh * 0.5
+                continue
+            for ln in textwrap.wrap(para, width=cpl):
+                self._need(lh + 8)
+                self.c.drawString(MARGIN + indent, self.y, ln)
+                self.y -= lh
+
+    def _bullet(self, text, indent=15, size=9.5):
+        """Draw bullet point - matches build_pdf3.py bullet()."""
+        CW = PAGE_WIDTH - 2 * MARGIN
+        self._need(18)
+        self.c.setFillColorRGB(*AQUAMARINE)
+        self.c.setFont(FONT_LIGHT, size)
+        self.c.drawString(MARGIN + indent, self.y, "\u2022")
+        self.c.setFillColorRGB(*DEEP_BLUE)
+        cpl = int((CW - indent - 12) / (size * 0.475))
+        lh = size + 4
+        for ln in textwrap.wrap(text, width=cpl):
+            self.c.drawString(MARGIN + indent + 12, self.y, ln)
+            self.y -= lh
+
+    def _callout(self, text, bg=STONE, border=AQUAMARINE, size=9.5):
+        """Draw callout box - matches build_pdf3.py callout()."""
+        CW = PAGE_WIDTH - 2 * MARGIN
+        self.c.setFont(FONT_LIGHT, size)
+        cpl = int((CW - 30) / (size * 0.475))
+        lines = textwrap.wrap(text, width=cpl)
+        lh = size + 4
+        text_block_h = len(lines) * lh
+        padding = 12
+        bh = text_block_h + padding * 2
+        if bh < 36:
+            bh = 36
+        self._need(bh + 6)
+        # Box background
+        box_bottom = self.y - bh + 8
+        self.c.setFillColorRGB(*bg)
+        self.c.roundRect(MARGIN, box_bottom, CW, bh, 4, fill=1, stroke=0)
+        # Left accent border
+        self.c.setFillColorRGB(*border)
+        self.c.rect(MARGIN, box_bottom, 4, bh, fill=1, stroke=0)
+        # Vertically centred text
+        box_centre_y = box_bottom + bh / 2
+        baseline_span = (len(lines) - 1) * lh
+        text_start_y = box_centre_y + baseline_span / 2 - size * 0.2
+        self.c.setFillColorRGB(*DEEP_BLUE)
+        self.c.setFont(FONT_LIGHT, size)
+        ty = text_start_y
+        for ln in lines:
+            self.c.drawString(MARGIN + 16, ty, ln)
+            ty -= lh
+        self.y -= bh + 4
+
+    def _gap(self, h=8):
+        """Add vertical gap."""
+        self.y -= h
 
     def _draw_text(self, text, x, y, font=None, size=10, color=DEEP_BLUE,
                    max_width=None, leading=None):
@@ -425,18 +540,10 @@ class PitchDeckGenerator:
                            preserveAspectRatio=True, mask='auto')
 
     def _page_2_executive_summary(self):
-        """Executive Summary page."""
-        self._new_page()
-        self._draw_header()
-        self._draw_footer()
+        """Executive Summary page - matches build_pdf3.py p_exec_summary()."""
+        self._start_content_page()
 
-        y = PAGE_HEIGHT - 100
-
-        # Title
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 24)
-        self.c.drawString(MARGIN, y, "Executive Summary")
-        y -= 40
+        self._h1("Executive Summary")
 
         # Intro paragraph
         sample_query = self.data.get('SAMPLE_QUERY', 'your services')
@@ -449,61 +556,60 @@ class PitchDeckGenerator:
         else:
             intro += '.'
 
-        y = self._draw_text(intro, MARGIN, y, max_width=500)
-        y -= 10
+        self._body(intro)
+        self._gap(6)
 
         # Callout box
-        callout = "This audit identifies the specific gaps holding you back and outlines what needs to change. Every issue has a proven solution – Peakweb can guide implementation to ensure it's done right the first time."
-        self._draw_callout_box(callout, MARGIN, y - 30, 500)
-        y -= 70
+        self._callout(
+            "This audit identifies the specific gaps holding you back and outlines what "
+            "needs to change. Every issue has a proven solution – Peakweb can guide "
+            "implementation to ensure it's done right the first time."
+        )
+        self._gap(4)
 
         # The New Reality: AI Search
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 14)
-        self.c.drawString(MARGIN, y, "The New Reality: AI Search")
-        y -= 20
-
-        ai_text = "The way people find local businesses is changing rapidly. Traditional Google Search still matters – customers search and get a list of links. But AI Search is growing fast: customers ask ChatGPT or Perplexity a question and get 2–3 direct recommendations. Those recommended businesses get the calls."
-        y = self._draw_text(ai_text, MARGIN, y, max_width=500)
-        y -= 10
+        self._h2("The New Reality: AI Search")
+        self._body(
+            "The way people find local businesses is changing rapidly. Traditional Google Search "
+            "still matters – customers search and get a list of links. But AI Search is growing "
+            "fast: customers ask ChatGPT or Perplexity a question and get 2–3 direct recommendations. "
+            "Those recommended businesses get the calls."
+        )
+        self._gap(4)
 
         city = self.data.get('CITY', 'your area')
         industry = self.data.get('INDUSTRY', 'your industry')
         service = self.data.get('SERVICE_TYPE', 'services')
 
-        right_now = f"Right now, AI systems answering questions about {city} {industry} or {service} services rarely mention your business. Not because you're not qualified, but because your website doesn't communicate effectively with AI systems yet."
-        y = self._draw_text(right_now, MARGIN, y, max_width=500)
-        y -= 25
+        self._body(
+            f"Right now, AI systems answering questions about {city} {industry} or {service} "
+            "services rarely mention your business. Not because you're not qualified, but "
+            "because your website doesn't communicate effectively with AI systems yet."
+        )
+        self._gap(6)
 
         # What Is GEO?
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 14)
-        self.c.drawString(MARGIN, y, "What Is GEO?")
-        y -= 20
+        self._h2("What Is GEO?")
+        self._body("GEO stands for Generative Engine Optimization. Think of it this way:")
+        self._gap(3)
+        self._bullet("SEO (Search Engine Optimization) = Making your website show up in Google search results")
+        self._bullet("GEO (Generative Engine Optimization) = Making your website get recommended by ChatGPT, Claude, Google AI, and Perplexity")
+        self._gap(4)
 
-        geo_intro = "GEO stands for Generative Engine Optimization. Think of it this way:"
-        y = self._draw_text(geo_intro, MARGIN, y, max_width=500)
-        y -= 5
-
-        geo_bullets = [
-            "SEO (Search Engine Optimization) = Making your website show up in Google search results",
-            "GEO (Generative Engine Optimization) = Making your website get recommended by ChatGPT, Claude, Google AI, and Perplexity"
-        ]
-        y = self._draw_bullet_list(geo_bullets, MARGIN, y, max_width=490)
-        y -= 10
-
-        studies = "Studies show that 30–115% more people discover businesses optimized for AI search compared to those that aren't. Your competitors who figure this out first will capture those leads. It's like having a Yellow Pages ad in 1990 vs. not having one."
-        y = self._draw_text(studies, MARGIN, y, max_width=500)
-        y -= 25
+        self._body(
+            "Studies show that 30–115% more people discover businesses optimized for AI search "
+            "compared to those that aren't. Your competitors who figure this out first will "
+            "capture those leads. It's like having a Yellow Pages ad in 1990 vs. not having one."
+        )
+        self._gap(6)
 
         # Why GEO Matters Now
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.setFont(FONT_SEMIBOLD, 14)
-        self.c.drawString(MARGIN, y, "Why GEO Matters Now")
-        y -= 20
-
-        why_now = "You need both SEO and GEO. Traditional SEO gets you found in Google. GEO gets you recommended by AI. Most SEO services don't include GEO yet – it's too new. That's why early movers have a huge advantage right now."
-        self._draw_text(why_now, MARGIN, y, max_width=500)
+        self._h2("Why GEO Matters Now")
+        self._body(
+            "You need both SEO and GEO. Traditional SEO gets you found in Google. GEO gets you "
+            "recommended by AI. Most SEO services don't include GEO yet – it's too new. "
+            "That's why early movers have a huge advantage right now."
+        )
 
     def _page_3_current_score(self):
         """Your Current Score page."""
