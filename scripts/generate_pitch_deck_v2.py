@@ -32,14 +32,16 @@ W_CHEVRON_PATH = os.path.join(PROJECT_DIR, "assets/PeakWeb-W-Chevron.png")
 PAGE_WIDTH, PAGE_HEIGHT = letter  # 612 x 792 points
 MARGIN = 54  # 0.75 inch
 
-# Brand Colors (RGB tuples 0-1)
-DEEP_BLUE = (10/255, 44/255, 73/255)
-AQUAMARINE = (1/255, 239/255, 160/255)
-LIGHT_GREEN = (188/255, 255/255, 138/255)
-MIDNIGHT_GREEN = (10/255, 62/255, 60/255)
-LILAC = (152/255, 146/255, 181/255)
-STONE = (252/255, 247/255, 230/255)
+# Brand Colors (RGB tuples 0-1) - from build_pdf3.py reference
+DEEP_BLUE = (10/255, 44/255, 73/255)         # #0A2C49
+AQUAMARINE = (1/255, 239/255, 160/255)       # #01EFA0
+LIGHT_GREEN = (188/255, 255/255, 138/255)    # #BCFF8A
+MIDNIGHT_GREEN = (10/255, 62/255, 60/255)    # #0A3E3C
+LILAC = (152/255, 146/255, 181/255)          # #9892B5
+STONE = (252/255, 247/255, 230/255)          # #FCF7E6
 WHITE = (1, 1, 1)
+LIGHT_BLUE_BG = (26/255, 74/255, 110/255)    # #1a4a6e - info box background
+MUTED_BLUE = (148/255, 184/255, 204/255)     # #94b8cc - labels and "Confidential"
 
 # ReportLab color objects
 C_DEEP_BLUE = colors.Color(*DEEP_BLUE)
@@ -266,94 +268,152 @@ class PitchDeckGenerator:
     # =========================================================================
 
     def _page_1_cover(self):
-        """Cover page - matches examples/peakweb/PeakwebGEOProposal-DenverSprinklerServices.pdf"""
+        """Cover page - matches examples/peakweb/PeakwebGEOProposal-DenverSprinklerServices.pdf
+        Reference: build_pdf3.py cover() method
+        """
         self._new_page(bg_color=DEEP_BLUE)
 
-        # Green bar at top - thin (about 6pt)
+        # Green bar at top - 3pt thick (from reference: self.accent(0, PH - 3, PW, 3))
         self.c.setFillColorRGB(*AQUAMARINE)
-        self.c.rect(0, PAGE_HEIGHT - 6, PAGE_WIDTH, 6, fill=1, stroke=0)
+        self.c.rect(0, PAGE_HEIGHT - 3, PAGE_WIDTH, 3, fill=1, stroke=0)
 
-        # Logo at top left - LARGER, positioned at left margin
+        # Logo at top left
+        # Reference uses 5:1 aspect ratio logo at (M, PH - 85, width=160)
+        # Our PNG is 8000x4500 (1.78:1), so we need to position it carefully
+        # y parameter is BOTTOM of image, so we need to account for image height
         if os.path.exists(LOGO_PATH):
-            # Make logo larger to match reference - was 180, increasing to 240
-            self.c.drawImage(LOGO_PATH, MARGIN, PAGE_HEIGHT - 85,
-                           width=240, height=55, preserveAspectRatio=True, mask='auto')
+            logo_width = 175
+            # PNG is 8000x4500, so height = width / (8000/4500) = width * 0.5625
+            logo_height = logo_width * (4500 / 8000)  # ≈ 98
+            # Position so top of logo is just below the green bar
+            # PNG has internal padding, so move it up to compensate (but leave small gap)
+            logo_y = PAGE_HEIGHT + 25 - logo_height
+            self.c.drawImage(LOGO_PATH, MARGIN, logo_y,
+                           width=logo_width, height=logo_height, mask='auto')
 
-        # Main title - use FONT_THIN for lighter weight
-        self.c.setFillColorRGB(*WHITE)
-        self.c.setFont(FONT_THIN, 42)
-        self.c.drawString(MARGIN, PAGE_HEIGHT - 200, "Website Visibility")
-        self.c.drawString(MARGIN, PAGE_HEIGHT - 250, "Audit")
+        # Main title - semibold simulation (fill + stroke)
+        self._draw_semibold_text(MARGIN, PAGE_HEIGHT - 200, "Website Visibility", 38, WHITE)
+        self._draw_semibold_text(MARGIN, PAGE_HEIGHT - 248, "Audit", 38, WHITE)
 
-        # Decorative line under "Audit"
-        self.c.setStrokeColorRGB(*AQUAMARINE)
-        self.c.setLineWidth(3)
-        self.c.line(MARGIN, PAGE_HEIGHT - 262, MARGIN + 80, PAGE_HEIGHT - 262)
+        # Decorative line under "Audit" - 4pt thick, 80px wide (from reference)
+        self.c.setFillColorRGB(*AQUAMARINE)
+        self.c.rect(MARGIN, PAGE_HEIGHT - 266, 80, 4, fill=1, stroke=0)
 
         # Subtitle (below the line)
         self.c.setFillColorRGB(*AQUAMARINE)
-        self.c.setFont(FONT_LIGHT, 14)
-        self.c.drawString(MARGIN, PAGE_HEIGHT - 290, "GEO Analysis & Implementation Proposal")
+        self.c.setFont(FONT_LIGHT, 16)
+        self.c.drawString(MARGIN, PAGE_HEIGHT - 296, "GEO Analysis & Implementation Proposal")
 
-        # Client info box with background
+        # Client info box - from reference: iy = PH - 370, bh = 110
+        iy = PAGE_HEIGHT - 370
+        bh = 110
         box_x = MARGIN
-        box_y = PAGE_HEIGHT - 450
         box_width = PAGE_WIDTH - 2 * MARGIN
-        box_height = 100
 
-        # Light blue background - very subtle, just slightly lighter than deep blue
-        # Original deep blue is (10, 44, 73), make it just a touch lighter
-        self.c.setFillColorRGB(12/255, 48/255, 78/255)
-        self.c.rect(box_x, box_y, box_width, box_height, fill=1, stroke=0)
+        # Light blue background - #1a4a6e from reference
+        self.c.setFillColorRGB(*LIGHT_BLUE_BG)
+        self.c.roundRect(box_x, iy - bh, box_width, bh, 6, fill=1, stroke=0)
 
-        # Green left border - same aquamarine as other accents
+        # Green left border - 4px wide
         self.c.setFillColorRGB(*AQUAMARINE)
-        self.c.rect(box_x, box_y, 4, box_height, fill=1, stroke=0)
+        self.c.rect(box_x, iy - bh, 4, bh, fill=1, stroke=0)
 
-        # PREPARED FOR - with proper padding
-        left_pad = 20
-        self.c.setFillColorRGB(*LILAC)
-        self.c.setFont(FONT_LIGHT, 7)
-        self.c.drawString(box_x + left_pad, box_y + 78, "PREPARED FOR")
+        # Labels use MUTED_BLUE color (from reference)
+        left_pad = 18
+        right_col = box_x + box_width / 2 + 10
+
+        # PREPARED FOR
+        self.c.setFillColorRGB(*MUTED_BLUE)
+        self.c.setFont(FONT_LIGHT, 8)
+        self.c.drawString(box_x + left_pad, iy - 18, "PREPARED FOR")
+
+        self.c.setFillColorRGB(*WHITE)
+        self.c.setFont(FONT_LIGHT, 13)
+        self.c.drawString(box_x + left_pad, iy - 35, self.data.get('CONTACT_NAME, TITLE', ''))
+        self.c.setFont(FONT_LIGHT, 11)
+        self.c.drawString(box_x + left_pad, iy - 52, self.data.get('CLIENT_NAME', ''))
+
+        # WEBSITE (right side)
+        self.c.setFillColorRGB(*MUTED_BLUE)
+        self.c.setFont(FONT_LIGHT, 8)
+        self.c.drawString(right_col, iy - 18, "WEBSITE")
 
         self.c.setFillColorRGB(*WHITE)
         self.c.setFont(FONT_LIGHT, 11)
-        self.c.drawString(box_x + left_pad, box_y + 60, self.data.get('CONTACT_NAME, TITLE', ''))
-        self.c.setFont(FONT_LIGHT, 10)
-        self.c.drawString(box_x + left_pad, box_y + 45, self.data.get('CLIENT_NAME', ''))
-
-        # WEBSITE (right side)
-        right_col = box_x + 300
-        self.c.setFillColorRGB(*LILAC)
-        self.c.setFont(FONT_LIGHT, 7)
-        self.c.drawString(right_col, box_y + 78, "WEBSITE")
-
-        self.c.setFillColorRGB(*WHITE)
-        self.c.setFont(FONT_LIGHT, 10)
-        self.c.drawString(right_col, box_y + 60, self.data.get('CLIENT_WEBSITE', ''))
+        self.c.drawString(right_col, iy - 35, self.data.get('CLIENT_WEBSITE', ''))
 
         # DATE
-        self.c.setFillColorRGB(*LILAC)
-        self.c.setFont(FONT_LIGHT, 7)
-        self.c.drawString(box_x + left_pad, box_y + 22, "DATE")
+        self.c.setFillColorRGB(*MUTED_BLUE)
+        self.c.setFont(FONT_LIGHT, 8)
+        self.c.drawString(box_x + left_pad, iy - 72, "DATE")
 
         self.c.setFillColorRGB(*WHITE)
-        self.c.setFont(FONT_LIGHT, 10)
-        self.c.drawString(box_x + left_pad, box_y + 8, self.data.get('REPORT_DATE', ''))
+        self.c.setFont(FONT_LIGHT, 11)
+        self.c.drawString(box_x + left_pad, iy - 88, self.data.get('REPORT_DATE', ''))
 
-        # W Chevron graphic in bottom right - extends past page edge
-        if os.path.exists(W_CHEVRON_PATH):
-            # Position so it extends past the right edge of the page
-            self.c.drawImage(W_CHEVRON_PATH, PAGE_WIDTH - 230, 40,
-                           width=280, height=270, preserveAspectRatio=True, mask='auto')
+        # W icon - from reference: self.w_icon(PW - 235, 50, size=260)
+        self._draw_w_icon(PAGE_WIDTH - 235, 50, size=260)
 
         # Footer
-        self.c.setFillColorRGB(*AQUAMARINE)  # Green color for peakweb.io
-        self.c.setFont(FONT_LIGHT, 8)
-        self.c.drawString(MARGIN, 28, "peakweb.io")
+        self.c.setFillColorRGB(*AQUAMARINE)
+        self.c.setFont(FONT_LIGHT, 9)
+        self.c.drawString(MARGIN, 30, "peakweb.io")
 
-        self.c.setFillColorRGB(*WHITE)
-        self.c.drawRightString(PAGE_WIDTH - MARGIN, 28, "Confidential")
+        # "Confidential" uses MUTED_BLUE (from reference)
+        self.c.setFillColorRGB(*MUTED_BLUE)
+        self.c.drawRightString(PAGE_WIDTH - MARGIN, 30, "Confidential")
+
+    def _draw_semibold_text(self, x, y, text, font_size, color):
+        """Simulate semi-bold by rendering text with fill + thin stroke (from build_pdf3.py)."""
+        self.c.saveState()
+        self.c.setFillColorRGB(*color)
+        self.c.setStrokeColorRGB(*color)
+        self.c.setLineWidth(font_size * 0.028)
+        self.c.setFont(FONT_LIGHT, font_size)
+        # Set text render mode to fill+stroke
+        self.c._code.append('2 Tr')  # 2 = fill and stroke
+        self.c.drawString(x, y, text)
+        self.c._code.append('0 Tr')  # Reset to fill only
+        self.c.restoreState()
+
+    def _draw_w_icon(self, x, y, size=200):
+        """Draw the Peakweb W icon mark (from build_pdf3.py w_icon method).
+        x, y = bottom-left of bounding box. size = desired width.
+        """
+        # Original SVG coordinates for the 3 parallelograms
+        # Bounding box in SVG: x 1033.79..1296.92, y 476.84..686.38
+        orig_w = 263.13
+        orig_h = 209.54
+        scale = size / orig_w
+        sh = orig_h * scale  # scaled height
+
+        # Three shapes as absolute SVG coords
+        shapes = [
+            # Rightmost, tallest
+            [(1296.92, 520.02), (1197.34, 686.38), (1171.29, 643.13), (1270.92, 476.84)],
+            # Middle
+            [(1178.03, 476.89), (1079.63, 641.13), (1105.65, 684.33), (1204.01, 520.02)],
+            # Leftmost, shortest
+            [(1085.86, 478.13), (1033.79, 565.04), (1059.79, 608.20), (1111.83, 521.26)],
+        ]
+        ox = 1033.79  # SVG origin x
+        oy = 476.84   # SVG origin y (top in SVG)
+
+        self.c.saveState()
+        self.c.setFillColorRGB(*AQUAMARINE)
+        for shape in shapes:
+            p = self.c.beginPath()
+            for i, (sx, sy) in enumerate(shape):
+                # Transform: shift to origin, scale, flip y, position at (x, y)
+                px = x + (sx - ox) * scale
+                py = y + sh - (sy - oy) * scale  # flip y
+                if i == 0:
+                    p.moveTo(px, py)
+                else:
+                    p.lineTo(px, py)
+            p.close()
+            self.c.drawPath(p, fill=1, stroke=0)
+        self.c.restoreState()
 
     def _draw_w_chevron(self, x, y, scale=1.0):
         """Draw the W chevron using the PNG image."""
@@ -1083,8 +1143,8 @@ class PitchDeckGenerator:
         self.c.setFont(FONT_LIGHT, 18)
         self.c.drawCentredString(PAGE_WIDTH / 2, y, "peakweb.io")
 
-        # Chevrons
-        self._draw_w_chevron(PAGE_WIDTH - 180, 80, scale=0.7)
+        # W icon (centered) - from reference: self.w_icon(PW / 2 - 80, 60, size=160)
+        self._draw_w_icon(PAGE_WIDTH / 2 - 80, 60, size=160)
 
         # Footer
         client_name = self.data.get('CLIENT_NAME_FULL', self.data.get('CLIENT_NAME', ''))
