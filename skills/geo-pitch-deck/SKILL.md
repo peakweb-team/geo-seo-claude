@@ -1,12 +1,6 @@
 ---
 name: geo-pitch-deck
-description: >
-  Generate a Peakweb-branded pitch deck PDF from GEO audit data. Creates a
-  professional 12-page PDF presentation ready to email to prospects. Includes
-  score visualizations, problem analysis, implementation roadmap, and pricing.
-version: 1.0.0
-tags: [geo, pdf, pitch-deck, client-deliverable, peakweb, sales]
-allowed-tools: Read, Write, Bash, Glob
+description: Generate a Peakweb-branded pitch deck PDF from GEO audit data. Creates a professional 12-page PDF presentation ready to email to prospects.
 ---
 
 # GEO Pitch Deck Generator
@@ -96,7 +90,9 @@ Parse the audit reports to extract:
 
 ### Step 3: Build JSON Data Structure
 
-Structure the extracted data as JSON for the PDF generator:
+Structure the extracted data as JSON for the PDF generator.
+
+**Note:** The script accepts both `snake_case` and `UPPER_SNAKE_CASE` keys. Arrays are also supported for lists (e.g., `working: [...]` becomes `WORKING_1`, `WORKING_2`, etc.).
 
 ```json
 {
@@ -200,17 +196,19 @@ Structure the extracted data as JSON for the PDF generator:
 
 ### Step 4: Generate PDF
 
-Run the template-filling script (uses the actual Peakweb template PDF as base):
+Run the pitch deck generator script:
 
 ```bash
-python3 scripts/fill_pitch_deck_template.py /tmp/pitch-deck-data.json "PeakwebGEOProposal-{ClientName}.pdf"
+python3 scripts/generate_pitch_deck.py /tmp/pitch-deck-data.json
+# Or with custom output filename:
+python3 scripts/generate_pitch_deck.py /tmp/pitch-deck-data.json "PeakwebGEOProposal-ClientName.pdf"
 ```
 
 This script:
-1. Opens the template PDF (`examples/peakweb/PeakwebGEOProposal-Template.pdf`)
-2. Finds all `{{PLACEHOLDER}}` text
-3. Redacts the placeholder text and fills in values from the JSON
-4. Preserves all original design, styling, graphics, and colors
+1. Accepts JSON with either snake_case or UPPER_SNAKE_CASE keys
+2. Programmatically generates a 12-page branded PDF using ReportLab
+3. Applies Peakweb brand guidelines (colors, fonts, logo)
+4. Creates all visualizations (score bars, charts, callout boxes)
 
 ### Step 5: Return Results
 
@@ -236,17 +234,17 @@ Ready to email to the prospect!
 | Page | Title | Content |
 |------|-------|---------|
 | 1 | Cover | Peakweb logo, "Website Visibility Audit", client name, date |
-| 2 | Executive Summary | GEO score gauge, key problem statement, AI search context |
-| 3 | Your Current Score | Score breakdown, what's working well, business impact |
+| 2 | Executive Summary | Key problem statement, AI search context, What is GEO |
+| 3 | Your Current Score | Score bar, what's working well, business impact |
 | 4 | The 6 Key Issues (Part 1) | Issues 1-3 with titles, descriptions, impact callouts |
-| 5 | The 6 Key Issues (Part 2) | Issues 4-6 with titles, descriptions, impact callouts |
-| 6 | What Happens If You Do Nothing | Short-term and long-term consequences |
-| 7 | The Opportunity | Current vs projected score, 4 improvement areas |
-| 8 | How Peakweb Gets You There | 4-week implementation roadmap |
-| 9 | Working With Peakweb | Pricing packages (Essentials $1K, Growth $2-3K, Partner $500/mo) |
-| 10 | ROI & SEO vs GEO | Investment return, comparison table |
-| 11 | Before/After Example | Real conversation showing the difference |
-| 12 | Next Steps | CTA, contact info, "Let's Talk" |
+| 5 | The 6 Key Issues (Part 2) | Issues 4-6 + What Happens If You Do Nothing |
+| 6 | The Opportunity | Current vs projected score, 4 improvement areas |
+| 7 | How Peakweb Gets You There | 4-week implementation roadmap |
+| 8 | Working With Peakweb | Pricing packages + ROI stats + compounding effect |
+| 9 | Traditional SEO vs GEO | Comparison table, "You Still Win" section |
+| 10 | Before/After + FAQs | Real conversation example, common questions |
+| 11 | Next Steps | 5-step process + "The Bottom Line" box |
+| 12 | Final CTA | "Ready to Get Started?", contact info, W icon |
 
 ---
 
