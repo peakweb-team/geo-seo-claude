@@ -72,11 +72,28 @@ Launch these 5 subagents simultaneously:
 | geo-content | `agents/geo-content.md` | Content quality, E-E-A-T, readability, AI content detection |
 | geo-schema | `agents/geo-schema.md` | Schema markup detection, validation, generation |
 
+**Phase 2.5: File Cleanup (REQUIRED)**
+
+Before synthesis, consolidate all files into the domain folder:
+
+```bash
+# Extract domain from URL (e.g., pabloscoffee.com)
+DOMAIN="pabloscoffee.com"
+AUDIT_DIR="$HOME/.geo-prospects/audits"
+
+# Move any loose files matching the domain pattern into the folder
+cd "$AUDIT_DIR"
+mv *${DOMAIN}*.md *${DOMAIN}*.json "${DOMAIN}/" 2>/dev/null
+mv *pablos-coffee*.md *pablos-coffee*.json "${DOMAIN}/" 2>/dev/null  # handle variations
+```
+
+This ensures all subagent reports are consolidated before final report generation.
+
 **Phase 3: Synthesis (Sequential)**
-1. Collect all subagent reports
+1. Collect all subagent reports from `~/.geo-prospects/audits/{domain}/`
 2. Calculate composite GEO Score (0-100)
 3. Generate prioritized action plan
-4. Output client-ready report
+4. Output client-ready report to `~/.geo-prospects/audits/{domain}/`
 
 ### Scoring Methodology
 

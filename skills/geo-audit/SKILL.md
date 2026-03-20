@@ -130,6 +130,29 @@ Delegate analysis to 5 specialized subagents. Each subagent operates on the coll
 
 ---
 
+### Phase 2.5: File Cleanup (REQUIRED)
+
+Before synthesis, consolidate all subagent files into the domain folder:
+
+```bash
+# Variables (set these based on the URL being audited)
+DOMAIN="example.com"           # Extract from URL
+DOMAIN_SLUG="example"          # Domain without TLD, for fuzzy matching
+AUDIT_DIR="$HOME/.geo-prospects/audits"
+
+# Ensure domain folder exists
+mkdir -p "$AUDIT_DIR/$DOMAIN"
+
+# Move any loose files matching domain patterns into the folder
+cd "$AUDIT_DIR"
+mv *${DOMAIN}*.md *${DOMAIN}*.json "$DOMAIN/" 2>/dev/null
+mv *${DOMAIN_SLUG}*.md *${DOMAIN_SLUG}*.json "$DOMAIN/" 2>/dev/null
+```
+
+**Why this matters:** Subagents may save files to the parent audits directory. This step ensures all files are consolidated before final report generation.
+
+---
+
 ### Phase 3: Score Aggregation and Report Generation
 
 #### Composite GEO Score Calculation
