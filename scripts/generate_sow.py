@@ -846,7 +846,7 @@ SAMPLE_DATA = {
             "AI configuration file deployment (llms.txt, robots.txt)",
             "Schema.org markup (Organization, Product, FAQPage)",
             "AI-optimized content creation (up to 10 pages)",
-            "Platform-specific optimization (Google AIO, ChatGPT, Perplexity)",
+            "Platform-specific optimization with validation via Perplexity API",
             "90-day monitoring dashboard",
             "Weekly progress reports"
         ],
@@ -881,7 +881,7 @@ SAMPLE_DATA = {
         {
             "number": 4,
             "name": "Validation & Launch",
-            "description": "Cross-platform testing, monitoring dashboard, final report",
+            "description": "Perplexity API citation testing, monitoring dashboard, final report",
             "due": "Week 9-12"
         }
     ],
@@ -944,7 +944,7 @@ SAMPLE_DATA = {
     "acceptance_criteria": (
         "Deliverables are considered accepted if no written objections are received "
         "within 5 business days of delivery. Final acceptance is confirmed by "
-        "documented GEO score improvement as measured against the baseline audit."
+        "documented citation rate improvement via Perplexity API testing against the baseline."
     ),
 
     "term": {

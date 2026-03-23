@@ -1232,7 +1232,7 @@ class PitchDeckGenerator:
         self._gap(3)
 
         self._timeline("Week 4", "Validation & Launch", "Peakweb-led", [
-            "QA across all major AI platforms (ChatGPT, Perplexity, Claude, Google AI)",
+            "Automated visibility testing via Perplexity API (before/after citation rates)",
             "Verify score hits projected targets; deliver final documentation",
         ], self.data.get('W4_SCORE', '85–90'))
 
@@ -1253,8 +1253,8 @@ class PitchDeckGenerator:
         self._option_card(
             "GEO Essentials – Guided Implementation ($1,000)",
             "Peakweb handles all priority technical fixes, deploys AI configuration files, "
-            "implements structured data, and validates your site across all major AI platforms. "
-            "Includes verification that your score hits projected targets and a follow-up report "
+            "implements structured data, and validates visibility via Perplexity API testing. "
+            "Includes verification that your citation rate improves and a follow-up report "
             "30 days after completion."
         )
         self._option_card(
