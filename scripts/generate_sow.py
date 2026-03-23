@@ -686,9 +686,13 @@ class SOWGenerator:
 
         # Payment terms
         self._h2("5.3 Payment Terms")
-        self._body("Invoices are due within 15 days of receipt. Payment can be made via:")
-        self._bullet("Bank transfer (ACH or wire)")
-        self._bullet("Credit card (3% processing fee applies)")
+        self._body("Invoices will be sent separately via Mercury and are due within 15 days of receipt.")
+        self._gap(5)
+        self._body("Accepted payment methods:")
+        self._bullet("Credit card")
+        self._bullet("Apple Pay / Google Pay")
+        self._bullet("ACH transfer")
+        self._bullet("Wire transfer")
 
         self._gap(10)
 
@@ -749,6 +753,21 @@ class SOWGenerator:
         self._gap(5)
         self._body(f"Termination: Either party may terminate with {notice}. "
                   f"Payment for completed work through the termination date is due immediately.")
+
+        self._gap(15)
+
+        # Liability & Risk
+        self._h2("6.5 Liability & Technical Modifications")
+        self._body(
+            "GEO implementation involves modifications to website code, configuration files, "
+            "structured data, and third-party platform settings. By signing this agreement, "
+            "Client acknowledges the inherent risks associated with such modifications."
+        )
+        self._gap(5)
+        self._bullet("Peakweb maintains professional liability insurance covering our services")
+        self._bullet("All modifications will be coordinated with Client's designated technical contact")
+        self._bullet("Peakweb will document all changes and provide rollback procedures where applicable")
+        self._bullet("Client is responsible for maintaining current backups of website and data")
 
     def _page_8_signatures(self):
         """Page 8: Signature blocks."""
