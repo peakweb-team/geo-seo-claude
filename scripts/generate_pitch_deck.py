@@ -1233,7 +1233,7 @@ class PitchDeckGenerator:
 
         self._timeline("Week 4", "Validation & Launch", "Peakweb-led", [
             "QA across all major AI platforms (ChatGPT, Perplexity, Claude, Google AI)",
-            "Deliver monitoring dashboard and ongoing content strategy",
+            "Set up GA4 AI/GEO traffic channel group for ongoing tracking",
         ], self.data.get('W4_SCORE', '85–90'))
 
     def _page_8_pricing(self):
@@ -1255,19 +1255,19 @@ class PitchDeckGenerator:
             "Peakweb handles all 7 priority technical fixes, deploys AI configuration files, "
             "implements structured data, and validates your site across all major AI platforms. "
             "You provide business content (photos, testimonials, project details); we handle the rest. "
-            "Includes 30-day post-launch monitoring."
+            "Includes GA4 AI traffic channel setup for ongoing tracking."
         )
         self._option_card(
             "GEO Growth – Full 30-Day Engagement ($2,000–$3,000)",
             "Everything in Essentials plus: authority-building across AI-indexed platforms, "
-            "AI-optimized content creation (guides, FAQs, case studies), video channel repair, "
-            "and a 90-day monitoring dashboard. Best for maximum visibility in the shortest time."
+            "AI-optimized content creation (guides, FAQs, case studies), and video channel repair. "
+            "Includes 3 monthly follow-up reports to track progress and refine strategy."
         )
         self._option_card(
             "GEO Partner – Ongoing Optimization ($500/month)",
-            "After initial implementation, Peakweb monitors your AI visibility monthly, "
-            "publishes fresh content to maintain relevance signals, and adapts your strategy "
-            "as AI platforms evolve. Ensures you stay ahead of competitors long-term."
+            "After initial implementation, Peakweb publishes fresh content to maintain relevance "
+            "signals, adapts your strategy as AI platforms evolve, and provides monthly progress "
+            "reports. Automated monitoring dashboard coming soon."
         )
         self._gap(8)
 
