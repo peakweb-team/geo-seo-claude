@@ -1233,7 +1233,7 @@ class PitchDeckGenerator:
 
         self._timeline("Week 4", "Validation & Launch", "Peakweb-led", [
             "QA across all major AI platforms (ChatGPT, Perplexity, Claude, Google AI)",
-            "Set up GA4 AI/GEO traffic channel group for ongoing tracking",
+            "Verify score hits projected targets; deliver final documentation",
         ], self.data.get('W4_SCORE', '85–90'))
 
     def _page_8_pricing(self):
@@ -1252,22 +1252,23 @@ class PitchDeckGenerator:
 
         self._option_card(
             "GEO Essentials – Guided Implementation ($1,000)",
-            "Peakweb handles all 7 priority technical fixes, deploys AI configuration files, "
+            "Peakweb handles all priority technical fixes, deploys AI configuration files, "
             "implements structured data, and validates your site across all major AI platforms. "
-            "You provide business content (photos, testimonials, project details); we handle the rest. "
-            "Includes GA4 AI traffic channel setup for ongoing tracking."
+            "Includes verification that your score hits projected targets and a follow-up report "
+            "30 days after completion."
         )
         self._option_card(
             "GEO Growth – Full 30-Day Engagement ($2,000–$3,000)",
-            "Everything in Essentials plus: authority-building across AI-indexed platforms, "
-            "AI-optimized content creation (guides, FAQs, case studies), and video channel repair. "
-            "Includes 3 monthly follow-up reports to track progress and refine strategy."
+            "Everything in Essentials plus: analytics configuration (GA4 AI traffic channels), "
+            "authority-building across AI-indexed platforms, AI-optimized content creation, "
+            "and 2 additional follow-up reports. Content generation as needed during 90-day "
+            "monitoring period."
         )
         self._option_card(
-            "GEO Partner – Ongoing Optimization ($500/month)",
-            "After initial implementation, Peakweb publishes fresh content to maintain relevance "
-            "signals, adapts your strategy as AI platforms evolve, and provides monthly progress "
-            "reports. Automated monitoring dashboard coming soon."
+            "GEO Partner – Ongoing Optimization ($500/month) – Coming Soon",
+            "Everything in Growth plus: automated monitoring dashboard, ongoing content "
+            "publication and polish, and continuous strategy adaptation as AI platforms evolve. "
+            "Contact us for early access."
         )
         self._gap(8)
 
