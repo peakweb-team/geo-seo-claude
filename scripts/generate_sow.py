@@ -42,6 +42,8 @@ AQUAMARINE = (1/255, 239/255, 160/255)       # #01EFA0
 LIGHT_GREEN = (188/255, 255/255, 138/255)    # #BCFF8A
 MIDNIGHT_GREEN = (10/255, 62/255, 60/255)    # #0A3E3C
 STONE = (252/255, 247/255, 230/255)          # #FCF7E6
+WARNING_ORANGE = (255/255, 165/255, 0/255)   # #FFA500
+WARNING_BG = (255/255, 248/255, 230/255)     # Light orange background
 WHITE = (1, 1, 1)
 LIGHT_GRAY = (0.95, 0.95, 0.95)
 TABLE_HEADER_BG = (0.12, 0.17, 0.29)         # Darker blue for table headers
@@ -148,7 +150,7 @@ class SOWGenerator:
 
         self.c.setFillColorRGB(*DEEP_BLUE)
         self.c.setFont(FONT_LIGHT, 8)
-        self.c.drawString(MARGIN, 28, "Peakweb LLC  |  peakweb.io")
+        self.c.drawString(MARGIN, 28, "Peakweb Inc.  |  peakweb.io")
 
         if confidential:
             self.c.drawCentredString(PAGE_WIDTH / 2, 28, "Confidential")
@@ -265,14 +267,46 @@ class SOWGenerator:
         self.y -= h
 
     def _draw_table(self, headers, rows, col_widths=None):
-        """Draw a simple table with headers and rows."""
+        """Draw a simple table with headers and rows, wrapping text as needed."""
         CW = PAGE_WIDTH - 2 * MARGIN
         if col_widths is None:
             col_widths = [CW / len(headers)] * len(headers)
 
-        row_height = 22
         header_height = 26
-        total_height = header_height + len(rows) * row_height + 10
+        line_height = 12
+        cell_padding = 8
+
+        # Calculate row heights based on wrapped text
+        row_heights = []
+        wrapped_rows = []
+        for row in rows:
+            max_lines = 1
+            wrapped_row = []
+            for i, cell in enumerate(row):
+                text = str(cell) if cell else ""
+                max_w = col_widths[i] - 16
+                # Wrap text
+                lines = []
+                words = text.split()
+                current_line = ""
+                for word in words:
+                    test_line = current_line + (" " if current_line else "") + word
+                    if self.c.stringWidth(test_line, FONT_LIGHT, 9) <= max_w:
+                        current_line = test_line
+                    else:
+                        if current_line:
+                            lines.append(current_line)
+                        current_line = word
+                if current_line:
+                    lines.append(current_line)
+                if not lines:
+                    lines = [""]
+                wrapped_row.append(lines)
+                max_lines = max(max_lines, len(lines))
+            wrapped_rows.append(wrapped_row)
+            row_heights.append(max(22, max_lines * line_height + cell_padding * 2))
+
+        total_height = header_height + sum(row_heights) + 10
         self._need(total_height)
 
         x = MARGIN
@@ -292,7 +326,7 @@ class SOWGenerator:
         y -= header_height
 
         # Data rows
-        for row_idx, row in enumerate(rows):
+        for row_idx, (wrapped_row, row_height) in enumerate(zip(wrapped_rows, row_heights)):
             # Alternating background
             if row_idx % 2 == 1:
                 self.c.setFillColorRGB(*TABLE_ALT_BG)
@@ -301,15 +335,11 @@ class SOWGenerator:
             self.c.setFillColorRGB(*DEEP_BLUE)
             self.c.setFont(FONT_LIGHT, 9)
             col_x = x + 8
-            for i, cell in enumerate(row):
-                # Truncate if too wide
-                max_w = col_widths[i] - 16
-                text = str(cell) if cell else ""
-                if self.c.stringWidth(text, FONT_LIGHT, 9) > max_w:
-                    while len(text) > 0 and self.c.stringWidth(text + "...", FONT_LIGHT, 9) > max_w:
-                        text = text[:-1]
-                    text = text.rstrip() + "..."
-                self.c.drawString(col_x, y - 15, text)
+            for i, lines in enumerate(wrapped_row):
+                text_y = y - cell_padding - 9
+                for line in lines:
+                    self.c.drawString(col_x, text_y, line)
+                    text_y -= line_height
                 col_x += col_widths[i]
             y -= row_height
 
@@ -435,7 +465,7 @@ class SOWGenerator:
         overview_text = (
             f"This Statement of Work (\"SOW\") establishes the terms for "
             f"Generative Engine Optimization (GEO) services to be provided by "
-            f"Peakweb LLC (\"Peakweb\") to {self.data.get('client', {}).get('company_name', 'Client')} "
+            f"Peakweb Inc. (\"Peakweb\") to {self.data.get('client', {}).get('company_name', 'Client')} "
             f"(\"Client\"). The engagement focuses on improving the Client's visibility "
             f"in AI-powered search systems including ChatGPT, Google AI Overviews, and Perplexity."
         )
@@ -555,17 +585,31 @@ class SOWGenerator:
             {"number": 3, "name": "Validation", "description": "Testing and monitoring", "due": "Week 5-6"},
         ])
 
-        headers = ["#", "Deliverable", "Description", "Due"]
-        rows = []
-        for d in deliverables:
-            rows.append([
-                str(d.get('number', '')),
-                d.get('name', ''),
-                d.get('description', ''),
-                d.get('due', '')
-            ])
+        # Check if any deliverables have due dates
+        has_due_dates = any(d.get('due', '').strip() for d in deliverables)
 
-        col_widths = [30, 130, 250, 80]
+        if has_due_dates:
+            headers = ["#", "Deliverable", "Description", "Due"]
+            rows = []
+            for d in deliverables:
+                rows.append([
+                    str(d.get('number', '')),
+                    d.get('name', ''),
+                    d.get('description', ''),
+                    d.get('due', '')
+                ])
+            col_widths = [30, 130, 250, 80]
+        else:
+            headers = ["#", "Deliverable", "Description"]
+            rows = []
+            for d in deliverables:
+                rows.append([
+                    str(d.get('number', '')),
+                    d.get('name', ''),
+                    d.get('description', '')
+                ])
+            col_widths = [30, 150, 310]
+
         self._draw_table(headers, rows, col_widths)
 
         self._gap(20)
@@ -582,6 +626,12 @@ class SOWGenerator:
                 if target:
                     text += f" (Target: {target}/100)"
                 self._bullet(text)
+
+        # Score dependency note (warning style)
+        score_note = self.data.get('score_dependency_note', '')
+        if score_note:
+            self._gap(10)
+            self._callout(score_note, bg=WARNING_BG, border=WARNING_ORANGE)
 
         # Engagement timeline
         self._gap(15)
@@ -789,7 +839,7 @@ class SOWGenerator:
         sig_y = self.y - 20
 
         # Peakweb signature
-        self._signature_block(MARGIN, sig_y, "Peakweb LLC", col_width)
+        self._signature_block(MARGIN, sig_y, "Peakweb Inc.", col_width)
 
         # Client signature
         client_name = self.data.get('client', {}).get('company_name', 'Client')
@@ -822,7 +872,7 @@ SAMPLE_DATA = {
     },
 
     "provider": {
-        "company_name": "Peakweb LLC",
+        "company_name": "Peakweb Inc.",
         "contact_name": "Nathan Perry",
         "contact_email": "nathan@peakweb.io"
     },
