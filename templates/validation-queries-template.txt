@@ -1,0 +1,58 @@
+# GEO Validation Query Template
+# Replace [BRAND], [INDUSTRY], [LOCATION], [SERVICE], [COMPETITOR] with client specifics
+# Delete or comment out irrelevant queries
+# Aim for 15-25 total queries
+
+# ============================================
+# BRAND QUERIES (5-7 queries)
+# Direct brand awareness - should cite client site
+# ============================================
+
+What is [BRAND]?
+Tell me about [BRAND]
+[BRAND] company overview
+[BRAND] services and products
+[BRAND] reviews and reputation
+Who founded [BRAND]?
+
+# ============================================
+# CATEGORY/INDUSTRY QUERIES (5-8 queries)
+# Where client should appear in recommendations
+# ============================================
+
+Best [INDUSTRY] companies in [LOCATION]
+Top [SERVICE] providers
+[INDUSTRY] companies near me
+Leading [SERVICE] firms in [LOCATION]
+Who are the major [INDUSTRY] companies?
+Recommended [SERVICE] providers for [USE_CASE]
+
+# ============================================
+# COMPARISON QUERIES (2-4 queries)
+# Where client might appear vs competitors
+# ============================================
+
+[BRAND] vs [COMPETITOR] comparison
+[BRAND] alternatives
+Companies similar to [COMPETITOR]
+[BRAND] compared to other [INDUSTRY] companies
+
+# ============================================
+# PROBLEM/SOLUTION QUERIES (3-5 queries)
+# Queries where client's content should be cited
+# Match these to actual content on client site
+# ============================================
+
+How to [SOLVE_PROBLEM_CLIENT_ADDRESSES]
+What is the best way to [TASK_CLIENT_HELPS_WITH]
+[INDUSTRY] best practices
+Guide to [TOPIC_CLIENT_HAS_CONTENT_ABOUT]
+[SPECIFIC_QUESTION_CLIENT_CONTENT_ANSWERS]
+
+# ============================================
+# LOCAL/GEOGRAPHIC QUERIES (if applicable)
+# ============================================
+
+[SERVICE] in [CITY]
+[INDUSTRY] companies [REGION]
+Best [SERVICE] near [LOCATION]

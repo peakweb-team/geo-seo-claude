@@ -199,10 +199,16 @@ Structure the extracted data as JSON for the PDF generator.
 Run the pitch deck generator script:
 
 ```bash
-python3 scripts/generate_pitch_deck.py /tmp/pitch-deck-data.json
+# Set repo root (adjust if needed)
+GEO_REPO="$HOME/gitRepos/geo-seo-claude"
+
+# Generate the PDF
+python3 "$GEO_REPO/scripts/generate_pitch_deck.py" /tmp/pitch-deck-data.json
 # Or with custom output filename:
-python3 scripts/generate_pitch_deck.py /tmp/pitch-deck-data.json "PeakwebGEOProposal-ClientName.pdf"
+python3 "$GEO_REPO/scripts/generate_pitch_deck.py" /tmp/pitch-deck-data.json "PeakwebGEOProposal-ClientName.pdf"
 ```
+
+**Note:** The script is located at `scripts/generate_pitch_deck.py` in the geo-seo-claude repository.
 
 This script:
 1. Accepts JSON with either snake_case or UPPER_SNAKE_CASE keys

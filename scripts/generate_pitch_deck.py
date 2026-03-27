@@ -1232,8 +1232,8 @@ class PitchDeckGenerator:
         self._gap(3)
 
         self._timeline("Week 4", "Validation & Launch", "Peakweb-led", [
-            "QA across all major AI platforms (ChatGPT, Perplexity, Claude, Google AI)",
-            "Deliver monitoring dashboard and ongoing content strategy",
+            "Automated visibility testing via Perplexity API (before/after citation rates)",
+            "Verify score hits projected targets; deliver final documentation",
         ], self.data.get('W4_SCORE', '85–90'))
 
     def _page_8_pricing(self):
@@ -1252,22 +1252,23 @@ class PitchDeckGenerator:
 
         self._option_card(
             "GEO Essentials – Guided Implementation ($1,000)",
-            "Peakweb handles all 7 priority technical fixes, deploys AI configuration files, "
-            "implements structured data, and validates your site across all major AI platforms. "
-            "You provide business content (photos, testimonials, project details); we handle the rest. "
-            "Includes 30-day post-launch monitoring."
+            "Peakweb handles all priority technical fixes, deploys AI configuration files, "
+            "implements structured data, and validates visibility via Perplexity API testing. "
+            "Includes verification that your citation rate improves and a follow-up report "
+            "30 days after completion."
         )
         self._option_card(
             "GEO Growth – Full 30-Day Engagement ($2,000–$3,000)",
-            "Everything in Essentials plus: authority-building across AI-indexed platforms, "
-            "AI-optimized content creation (guides, FAQs, case studies), video channel repair, "
-            "and a 90-day monitoring dashboard. Best for maximum visibility in the shortest time."
+            "Everything in Essentials plus: analytics configuration (GA4 AI traffic channels), "
+            "authority-building across AI-indexed platforms, AI-optimized content creation, "
+            "and 2 additional follow-up reports. Content generation as needed during 90-day "
+            "monitoring period."
         )
         self._option_card(
-            "GEO Partner – Ongoing Optimization ($500/month)",
-            "After initial implementation, Peakweb monitors your AI visibility monthly, "
-            "publishes fresh content to maintain relevance signals, and adapts your strategy "
-            "as AI platforms evolve. Ensures you stay ahead of competitors long-term."
+            "GEO Partner – Ongoing Optimization ($500/month) – Coming Soon",
+            "Everything in Growth plus: automated monitoring dashboard, ongoing content "
+            "publication and polish, and continuous strategy adaptation as AI platforms evolve. "
+            "Contact us for early access."
         )
         self._gap(8)
 
@@ -1443,17 +1444,19 @@ class PitchDeckGenerator:
             "We'll walk through this audit together, answer your questions, and "
             "recommend the right engagement level for your goals and budget.")
         self._numbered(2, "Choose Your Implementation Package",
-            "GEO Essentials ($1,000) for priority technical fixes, GEO Growth "
-            "($2,000–$3,000) for the full 30-day roadmap, or GEO Partner ($500/mo) for ongoing optimization.")
+            self.data.get('NEXT_STEP_2',
+            "We offer packages tailored to your site complexity and goals. "
+            "See the pricing options in this report, or ask us for a custom quote."))
         self._numbered(3, "Gather Your Business Content",
             "While Peakweb handles the technical side, you'll want to have project photos, "
             "customer stories, and service details ready. We'll send you a simple content checklist.")
         self._numbered(4, "Implementation Begins",
             "Peakweb deploys changes in the sequence outlined in our 30-day roadmap, "
             "with check-ins at each milestone so you always know what's happening.")
-        self._numbered(5, "Track Results Together",
-            "We'll monitor your visibility across ChatGPT, Perplexity, Google AI, and Claude – "
-            "and provide monthly reports showing your score improvement and lead impact.")
+        self._numbered(5, "Validate and Launch",
+            self.data.get('NEXT_STEP_5',
+            "We validate changes across all AI platforms, provide a final score report, "
+            "and document everything for your team. Ongoing monitoring available separately."))
 
         self._gap(10)
 

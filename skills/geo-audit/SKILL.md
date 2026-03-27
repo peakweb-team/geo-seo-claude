@@ -26,6 +26,17 @@ Traditional SEO optimizes for search engine rankings. GEO optimizes for AI citat
 
 ### Phase 1: Discovery and Reconnaissance
 
+**Step 0: Create Output Directory (REQUIRED FIRST)**
+
+Before any other work, create the domain-specific output folder:
+
+```bash
+# Extract domain from URL (e.g., https://example.com/page → example.com)
+mkdir -p ~/.geo-prospects/audits/{domain}
+```
+
+All subsequent files (subagent reports, final reports, JSON data) MUST be saved to this folder.
+
 **Step 1: Fetch Homepage and Detect Business Type**
 
 1. Use WebFetch to retrieve the homepage at the provided URL.
@@ -86,6 +97,9 @@ For each page in the crawl set, record:
 
 Delegate analysis to 5 specialized subagents. Each subagent operates on the collected page data and produces a category score (0-100) plus findings.
 
+**IMPORTANT:** When spawning each subagent, include the output path in the prompt:
+> Save your report to `~/.geo-prospects/audits/{domain}/{report-name}.md`
+
 **Subagent 1: AI Citability Analysis (geo-citability)**
 - Analyze content blocks for quotability by AI systems
 - Score passage self-containment, answer block quality, statistical density
@@ -113,6 +127,29 @@ Delegate analysis to 5 specialized subagents. Each subagent operates on the coll
 - Check for GEO-critical schema types (FAQ, HowTo, Organization, Product, Article)
 - Assess schema completeness and accuracy
 - Identify missing schema opportunities
+
+---
+
+### Phase 2.5: File Cleanup (REQUIRED)
+
+Before synthesis, consolidate all subagent files into the domain folder:
+
+```bash
+# Variables (set these based on the URL being audited)
+DOMAIN="example.com"           # Extract from URL
+DOMAIN_SLUG="example"          # Domain without TLD, for fuzzy matching
+AUDIT_DIR="$HOME/.geo-prospects/audits"
+
+# Ensure domain folder exists
+mkdir -p "$AUDIT_DIR/$DOMAIN"
+
+# Move any loose files matching domain patterns into the folder
+cd "$AUDIT_DIR"
+mv *${DOMAIN}*.md *${DOMAIN}*.json "$DOMAIN/" 2>/dev/null
+mv *${DOMAIN_SLUG}*.md *${DOMAIN_SLUG}*.json "$DOMAIN/" 2>/dev/null
+```
+
+**Why this matters:** Subagents may save files to the parent audits directory. This step ensures all files are consolidated before final report generation.
 
 ---
 

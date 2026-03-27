@@ -31,6 +31,7 @@ allowed-tools: Read, Grep, Glob, Bash, WebFetch, Write
 | `/geo-peakweb prospect <cmd>` | CRM-lite: manage prospects through the sales pipeline |
 | `/geo-peakweb proposal <domain>` | Auto-generate client proposal from audit data |
 | `/geo-peakweb pitch-deck <domain>` | Generate Peakweb-branded pitch deck PDF |
+| `/geo-peakweb sow <domain>` | Generate Statement of Work PDF for client engagement |
 | `/geo-peakweb compare <domain>` | Monthly delta report: show score improvements to client |
 
 ---
@@ -72,11 +73,28 @@ Launch these 5 subagents simultaneously:
 | geo-content | `agents/geo-content.md` | Content quality, E-E-A-T, readability, AI content detection |
 | geo-schema | `agents/geo-schema.md` | Schema markup detection, validation, generation |
 
+**Phase 2.5: File Cleanup (REQUIRED)**
+
+Before synthesis, consolidate all files into the domain folder:
+
+```bash
+# Extract domain from URL (e.g., pabloscoffee.com)
+DOMAIN="pabloscoffee.com"
+AUDIT_DIR="$HOME/.geo-prospects/audits"
+
+# Move any loose files matching the domain pattern into the folder
+cd "$AUDIT_DIR"
+mv *${DOMAIN}*.md *${DOMAIN}*.json "${DOMAIN}/" 2>/dev/null
+mv *pablos-coffee*.md *pablos-coffee*.json "${DOMAIN}/" 2>/dev/null  # handle variations
+```
+
+This ensures all subagent reports are consolidated before final report generation.
+
 **Phase 3: Synthesis (Sequential)**
-1. Collect all subagent reports
+1. Collect all subagent reports from `~/.geo-prospects/audits/{domain}/`
 2. Calculate composite GEO Score (0-100)
 3. Generate prioritized action plan
-4. Output client-ready report
+4. Output client-ready report to `~/.geo-prospects/audits/{domain}/`
 
 ### Scoring Methodology
 
@@ -108,7 +126,7 @@ Adjust recommendations based on detected type. Local businesses need LocalBusine
 
 ---
 
-## Sub-Skills (10 Specialized Components)
+## Sub-Skills (15 Specialized Components)
 
 | # | Skill | Directory | Purpose |
 |---|-------|-----------|---------|
@@ -126,6 +144,7 @@ Adjust recommendations based on detected type. Local businesses need LocalBusine
 | 12 | geo-proposal | `skills/geo-proposal/` | Auto-generate client proposals from audit data |
 | 13 | geo-pitch-deck | `skills/geo-pitch-deck/` | Peakweb-branded pitch deck PDF generation |
 | 14 | geo-compare | `skills/geo-compare/` | Monthly delta tracking and progress reports |
+| 15 | geo-sow | `skills/geo-sow/` | Statement of Work PDF generation |
 
 ---
 
@@ -163,6 +182,7 @@ All commands generate structured output:
 | `/geo-peakweb prospect` | Updates `~/.geo-prospects/prospects.json` |
 | `/geo-peakweb proposal` | `~/.geo-prospects/proposals/<domain>-proposal-<date>.md` |
 | `/geo-peakweb pitch-deck` | `PeakwebGEOProposal-{ClientName}.pdf` |
+| `/geo-peakweb sow` | `PeakwebSOW-{ClientName}-{Date}.pdf` |
 | `/geo-peakweb compare` | `~/.geo-prospects/reports/<domain>-monthly-<YYYY-MM>.md` |
 
 ---
