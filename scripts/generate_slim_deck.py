@@ -43,6 +43,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
 FONTS_DIR = os.path.join(PROJECT_DIR, "assets/fonts")
 LOGO_PATH = os.path.join(PROJECT_DIR, "assets/PeakWeb-Green-RGB.png")
+LOGO_STONE_BLUE_PATH = os.path.join(PROJECT_DIR, "assets/Stone-Blue.jpg")
 W_CHEVRON_PATH = os.path.join(PROJECT_DIR, "assets/PeakWeb-W-Chevron.png")
 
 # ─── Page dimensions ──────────────────────────────────────────────────────────
@@ -167,17 +168,20 @@ class SlimDeckGenerator:
         self.c.setFillColorRGB(*bg)
         self.c.rect(0, 0, PAGE_WIDTH, PAGE_HEIGHT, fill=1, stroke=0)
 
-    def _draw_header(self, dark_bg=False):
+    def _draw_header(self, dark_bg=False, logo_path=None):
         """Deep Blue header bar with logo + client info."""
         hdr_h = 42
         self.c.setFillColorRGB(*DEEP_BLUE)
         self.c.rect(0, PAGE_HEIGHT - hdr_h, PAGE_WIDTH, hdr_h, fill=1, stroke=0)
 
-        if os.path.exists(LOGO_PATH):
+        chosen_logo = logo_path or LOGO_PATH
+        if os.path.exists(chosen_logo):
             logo_w = 90
-            logo_h = logo_w * (4500 / 8000)
+            # Stone-Blue.jpg is square (4500×4500), Green-RGB.png is 8000×4500
+            is_square = chosen_logo == LOGO_STONE_BLUE_PATH
+            logo_h = logo_w if is_square else logo_w * (4500 / 8000)
             logo_y = PAGE_HEIGHT - hdr_h + (hdr_h - logo_h) / 2
-            self.c.drawImage(LOGO_PATH, MARGIN, logo_y,
+            self.c.drawImage(chosen_logo, MARGIN, logo_y,
                              width=logo_w, height=logo_h, mask='auto')
 
         # Client name + domain right-aligned
@@ -749,7 +753,7 @@ class SlimDeckGenerator:
 
     def _page_3(self):
         self._new_page(bg=DEEP_BLUE)
-        self._draw_header(dark_bg=True)
+        self._draw_header(dark_bg=True, logo_path=LOGO_STONE_BLUE_PATH)
         self._draw_footer(text_color=AQUAMARINE, line_color=AQUAMARINE)
 
         # Title (no Stone band — dark page)
@@ -770,22 +774,17 @@ class SlimDeckGenerator:
             (3, "Competitor Analysis","See exactly who AI recommends instead of you — and why"),
             (4, "On-site Optimizations", "llms.txt · schema markup · robots.txt · FAQ & content fixes"),
             (5, "Off-site Recommendations", "New platform presence · revised listings · citation building"),
+            (6, "GA4 Monitoring",     "Track AI-referred traffic and measure GEO impact month over month"),
         ]
         for i, (num, title, desc) in enumerate(steps[:3]):
             cx = MARGIN + i * (card_w + 8)
             self._step_card(cx, row1_y, card_w, card_h, num, title, desc)
 
-        # ── Row 2 (2 cards, centred) ───────────────────────────────────────
-        row2_card_w = card_w
-        row2_gap = CW - 2 * row2_card_w
-        row2_x1 = MARGIN + row2_gap / 2
-        row2_x2 = row2_x1 + row2_card_w + row2_gap / 2
+        # ── Row 2 (3 cards) ────────────────────────────────────────────────
         row2_y = row1_y - 10 - card_h
-
-        for idx, (x_pos, step) in enumerate(
-                zip([row2_x1, row2_x2], steps[3:])):
-            num, title, desc = step
-            self._step_card(x_pos, row2_y, row2_card_w, card_h, num, title, desc)
+        for i, (num, title, desc) in enumerate(steps[3:]):
+            cx = MARGIN + i * (card_w + 8)
+            self._step_card(cx, row2_y, card_w, card_h, num, title, desc)
 
         y_after_cards = row2_y - 14
 
@@ -797,7 +796,7 @@ class SlimDeckGenerator:
         self.c.setFillColorRGB(*AQUAMARINE)
         self.c.rect(MARGIN, pricing_y, 4, pricing_h, fill=1, stroke=0)
         pricing_text = (
-            "Starting at $1,000 for GEO Essentials  ·  "
+            "Starting at $999 for GEO Essentials  ·  "
             "Audit  ·  Technical fixes  ·  Schema  ·  AI config files  ·  30-day monitoring"
         )
         lines = self._wrap(pricing_text, FONT_LIGHT, 8.5, CW - 22)
