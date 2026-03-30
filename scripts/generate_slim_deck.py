@@ -568,10 +568,10 @@ class SlimDeckGenerator:
             "You control the click.",
         ], STONE, DEEP_BLUE, text_size=9.5)
 
-        # Right column header: Midnight Green with Aquamarine text
+        # Right column header: Stone
         self._col_header(col_x_r, hdr_y, col_w, hdr_h,
                          "GEO  —  AI SEARCH", MIDNIGHT_GREEN, AQUAMARINE)
-        # Right column body: Midnight Green
+        # Right column body: Deep Blue (creates two-tone to match left column)
         self._col_body(col_x_r, body_y, col_w, body_h, [
             "ChatGPT / Perplexity / Gemini",
             "→  AI answers the question",
@@ -579,12 +579,7 @@ class SlimDeckGenerator:
             "→  User may never visit Google",
             "",
             "You must earn the citation.",
-        ], MIDNIGHT_GREEN, STONE, text_size=9.5)
-
-        # Thin Lilac divider between columns
-        div_x = MARGIN + col_w + 2
-        self.c.setFillColorRGB(*LILAC)
-        self.c.rect(div_x, body_y, 2, hdr_h + body_h, fill=1, stroke=0)
+        ], STONE, DEEP_BLUE, text_size=9.5)
 
         y_after_cols = body_y - 14
 
