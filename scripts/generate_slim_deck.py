@@ -479,13 +479,13 @@ class SlimDeckGenerator:
         p.arc(x1, y1, x2, y2, startAng=0, extent=180)
         self.c.drawPath(p, stroke=1, fill=0)
 
-        # Score arc (proportional)
+        # Score arc (proportional) — fills from the left
         arc_color = AMBER if score < 60 else (
             LIGHT_GREEN if score >= 80 else AQUAMARINE)
         self.c.setStrokeColorRGB(*arc_color)
         extent = score / 100 * 180
         p2 = self.c.beginPath()
-        p2.arc(x1, y1, x2, y2, startAng=0, extent=extent)
+        p2.arc(x1, y1, x2, y2, startAng=180 - extent, extent=extent)
         self.c.drawPath(p2, stroke=1, fill=0)
         self.c.restoreState()
 
