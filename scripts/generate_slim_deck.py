@@ -243,6 +243,48 @@ class SlimDeckGenerator:
         self.c.setFont(f, size)
         self.c.drawCentredString(cx, y, text)
 
+    def _sb_centered_with_emoji(self, cx, y, emoji, text, size, color):
+        """Draw centred semibold text preceded by an emoji image, both centred together."""
+        from PIL import Image, ImageDraw, ImageFont as PILFont
+        import tempfile
+
+        EMOJI_FONT = '/System/Library/Fonts/Apple Color Emoji.ttc'
+        px_size = int(size * 5)          # render at 5× for sharpness
+        pt_h = size * 1.35               # visual height in PDF pts
+        gap = size * 0.55                # gap between emoji and text
+
+        # Measure text width
+        self.c.setFont(FONT_SEMIBOLD, size)
+        text_w = self.c.stringWidth(text, FONT_SEMIBOLD, size)
+
+        if os.path.exists(EMOJI_FONT):
+            try:
+                img = Image.new('RGBA', (px_size, px_size), (0, 0, 0, 0))
+                draw = ImageDraw.Draw(img)
+                efont = PILFont.truetype(EMOJI_FONT, px_size - 4)
+                draw.text((0, 0), emoji, font=efont, embedded_color=True)
+                # Crop to bounding box of non-transparent pixels
+                bbox = img.getbbox()
+                if bbox:
+                    img = img.crop(bbox)
+                aspect = img.width / img.height
+                pt_w = pt_h * aspect
+                total_w = pt_w + gap + text_w
+                ex = cx - total_w / 2
+                # Save to temp PNG and embed in PDF
+                with tempfile.NamedTemporaryFile(suffix='.png', delete=False) as tf:
+                    img.save(tf.name)
+                    self.c.drawImage(tf.name, ex, y - 1,
+                                     width=pt_w, height=pt_h, mask='auto')
+                os.unlink(tf.name)
+                self._sb(ex + pt_w + gap, y, text, size, color)
+                return
+            except Exception:
+                pass
+
+        # Fallback: centred text only (no emoji)
+        self._sb_centered(cx, y, text, size, color)
+
     def _italic(self, x, y, text, size, color):
         """Simulate italic via a horizontal shear transform. Returns glyph width."""
         skew = math.tan(math.radians(13))
@@ -737,9 +779,12 @@ class SlimDeckGenerator:
         # Amber header band
         self.c.setFillColorRGB(*AMBER)
         self.c.rect(0, risk_hdr_y, PAGE_WIDTH, risk_hdr_h, fill=1, stroke=0)
-        self._sb_centered(PAGE_WIDTH / 2, risk_hdr_y + 9,
-                          f"\U0001f680  Position {self.d['client_name']} for Growth",
-                          10, DEEP_BLUE)
+        self._sb_centered_with_emoji(
+            PAGE_WIDTH / 2, risk_hdr_y + 9,
+            "\U0001f680",
+            f"Position {self.d['client_name']} for Growth",
+            10, DEEP_BLUE,
+        )
 
         # Expand body to fill remaining space above the footer line (y=42)
         footer_clearance = 55
