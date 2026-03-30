@@ -329,3 +329,80 @@ The pitch deck presents three Peakweb service tiers:
    ```
    Peakweb logo not found. Expected: assets/PeakWeb-Green-RGB.jpg
    ```
+
+---
+
+## Slim Deck
+
+A 3-page infographic-style "GEO Snapshot" PDF. Use this for **cold outreach / first contact**. It's scannable in under 2 minutes and drives the prospect to book a call. Follow up with the full 12-page deck after engagement.
+
+### Command
+
+```
+/geo-peakweb slim-deck <domain> [--client-name "Name"] [--contact-name "Name"]
+```
+
+**Example:**
+```
+/geo-peakweb slim-deck denversprinklerservices.com --client-name "Denver Sprinkler & Landscape" --contact-name "Ramon Robles"
+```
+
+### Workflow
+
+1. Load audit data (same as full deck — uses `CLIENT-REPORT.md`)
+2. Extract the simplified fields below
+3. Build JSON and run:
+
+```bash
+GEO_REPO="$HOME/gitRepos/geo-seo-claude"
+python3 "$GEO_REPO/scripts/generate_slim_deck.py" /tmp/slim-data.json
+```
+
+### JSON Schema (simplified)
+
+```json
+{
+  "client_name": "Denver Sprinkler & Landscape",
+  "client_website": "denversprinklerservices.com",
+  "report_date": "March 23, 2026",
+  "contact_name": "Ramon Robles",
+  "geo_score": 52,
+  "score_label": "Fair",
+  "projected_score": 85,
+  "working": [
+    "AI crawlers can access your site (GPTBot, ClaudeBot allowed)",
+    "Strong technical foundation — WordPress, HTTPS, mobile-ready",
+    "LocalBusiness schema & Google Business Profile exist"
+  ],
+  "improvements": [
+    "No llms.txt — AI systems lack structured guidance about you",
+    "Missing FAQ schema on service pages (key citation opportunity)",
+    "Limited presence on AI-indexed third-party platforms"
+  ],
+  "onsite_tasks": 6,
+  "offsite_tasks": 4
+}
+```
+
+All fields have defaults — only `client_name`, `geo_score`, and `score_label` are truly required.
+
+### Output
+
+- **PDF file:** `PeakwebGEOSnapshot-{ClientName}.pdf`
+- **Format:** 3 pages, US Letter (8.5" × 11")
+
+### PDF Structure
+
+| Page | Title | Key Elements |
+|------|-------|--------------|
+| 1 | The Changing Search Landscape | SEO vs GEO comparison · stat badges · 3 opportunity cards · personalised insight |
+| 2 | Your GEO Snapshot + The Risk | Score arc gauge · what's working / needs attention · on-site vs off-site summary · risk banner |
+| 3 | Peakweb GEO Services + CTA | 5 numbered service cards · pricing line · large Aquamarine CTA box |
+
+### When to Use Each Deck
+
+| Situation | Use |
+|-----------|-----|
+| Cold outreach email, first contact | **Slim deck** (3 pages) |
+| Follow-up after prospect engagement | **Full deck** (12 pages) |
+| Prospect has asked detailed questions | **Full deck** + SOW |
