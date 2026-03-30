@@ -28,6 +28,7 @@ JSON input schema:
 """
 
 import json
+import math
 import os
 import re
 import sys
@@ -241,6 +242,40 @@ class SlimDeckGenerator:
         self.c.setFillColorRGB(*color)
         self.c.setFont(f, size)
         self.c.drawCentredString(cx, y, text)
+
+    def _italic(self, x, y, text, size, color):
+        """Simulate italic via a horizontal shear transform. Returns glyph width."""
+        skew = math.tan(math.radians(13))
+        self.c.saveState()
+        self.c.setFillColorRGB(*color)
+        self.c.setFont(FONT_LIGHT, size)
+        self.c.transform(1, 0, skew, 1, 0, 0)
+        self.c.drawString(x - skew * y, y, text)
+        self.c.restoreState()
+        return self.c.stringWidth(text, FONT_LIGHT, size)
+
+    def _render_segments(self, x, y, segments, base_size, base_color):
+        """Render a list of (text, style, color_override) tuples inline.
+
+        style: 'normal' | 'bold' | 'italic'
+        color_override: RGB tuple or None to use base_color
+        Returns x after the last segment.
+        """
+        px = x
+        for text, style, color_override in segments:
+            color = color_override or base_color
+            if style == 'bold':
+                self._sb(px, y, text, base_size, color)
+                self.c.setFont(FONT_SEMIBOLD, base_size)
+                px += self.c.stringWidth(text, FONT_SEMIBOLD, base_size)
+            elif style == 'italic':
+                px += self._italic(px, y, text, base_size, color)
+            else:
+                self.c.setFillColorRGB(*color)
+                self.c.setFont(FONT_LIGHT, base_size)
+                self.c.drawString(px, y, text)
+                px += self.c.stringWidth(text, FONT_LIGHT, base_size)
+        return px
 
     def _wrap(self, text, font, size, max_w):
         """Word-wrap text to fit max_w; returns list of lines."""
@@ -700,9 +735,12 @@ class SlimDeckGenerator:
         self.c.setFillColorRGB(*AMBER)
         self.c.rect(0, risk_hdr_y, PAGE_WIDTH, risk_hdr_h, fill=1, stroke=0)
         self._sb_centered(PAGE_WIDTH / 2, risk_hdr_y + 9,
-                          "⚠  THE WINDOW IS CLOSING", 11, DEEP_BLUE)
+                          f"\U0001f680  Position {self.d['client_name']} for Growth",
+                          10, DEEP_BLUE)
 
-        risk_body_h = 110
+        # Expand body to fill remaining space above the footer line (y=42)
+        footer_clearance = 55
+        risk_body_h = max(110, risk_hdr_y - footer_clearance)
         risk_body_y = risk_hdr_y - risk_body_h
         # WARN_BG body box
         self.c.setFillColorRGB(*WARN_BG)
@@ -712,42 +750,43 @@ class SlimDeckGenerator:
         self.c.setFillColorRGB(*AMBER)
         self.c.rect(MARGIN, risk_body_y, 4, risk_body_h, fill=1, stroke=0)
 
+        # Each line is a list of (text, style, color_override) segments.
+        # Styles: 'normal' | 'bold' | 'italic'
         risk_lines = [
-            ("As competitors optimize, AI embeds them in responses — permanently.", False),
-            ("Catching up costs 3–5× more and takes 6+ months once the field is crowded.", True),
-            ("First-mover advantage compounds: early presence becomes a lasting citation signal.", False),
+            [
+                ("As competitors optimize, AI embeds them in responses\u00a0\u2014\u00a0", "normal", None),
+                ("permanently", "italic", None),
+                (".", "normal", None),
+            ],
+            [
+                ("Catching up costs\u00a0", "normal", None),
+                ("3\u20135\u00d7", "bold", AMBER),
+                (" more and takes\u00a0", "normal", None),
+                ("6+ months", "italic", None),
+                (" once the field is crowded.", "normal", None),
+            ],
+            [
+                ("First-mover advantage", "bold", None),
+                (" compounds: early presence becomes a lasting\u00a0", "normal", None),
+                ("citation signal", "italic", None),
+                (".", "normal", None),
+            ],
         ]
-        ty = risk_body_y + risk_body_h - 18
-        for line_text, has_emphasis in risk_lines:
-            self.c.setFillColorRGB(*DEEP_BLUE)
-            self.c.setFont(FONT_LIGHT, 8.5)
-            # Small amber bullet
+
+        # Space bullets evenly across the full body height
+        n_lines = len(risk_lines)
+        v_pad = 14
+        usable_h = risk_body_h - 2 * v_pad
+        slot_h = usable_h / n_lines
+
+        for i, segments in enumerate(risk_lines):
+            # Vertically centre each item in its slot (top slot = i=0)
+            ty = risk_body_y + risk_body_h - v_pad - (i + 0.5) * slot_h
+
             self.c.setFillColorRGB(*AMBER)
             self.c.circle(MARGIN + 18, ty + 3, 4, fill=1, stroke=0)
-            if has_emphasis:
-                # Split on "3–5×" and render that part in Amber/larger
-                parts = line_text.split("3–5×")
-                px = MARGIN + 30
-                for pi, part in enumerate(parts):
-                    self.c.setFillColorRGB(*DEEP_BLUE)
-                    self.c.setFont(FONT_LIGHT, 8.5)
-                    self.c.drawString(px, ty, part)
-                    px += self.c.stringWidth(part, FONT_LIGHT, 8.5)
-                    if pi < len(parts) - 1:
-                        self._sb(px, ty, "3–5×", 10, AMBER)
-                        self.c.setFont(FONT_SEMIBOLD, 10)
-                        px += self.c.stringWidth("3–5×", FONT_SEMIBOLD, 10)
-            else:
-                wrapped = self._wrap(line_text, FONT_LIGHT, 8.5, CW - 40)
-                wy = ty
-                for wl in wrapped:
-                    self.c.setFillColorRGB(*DEEP_BLUE)
-                    self.c.setFont(FONT_LIGHT, 8.5)
-                    self.c.drawString(MARGIN + 30, wy, wl)
-                    wy -= 12
-                ty = wy - 4
-                continue
-            ty -= 28
+
+            self._render_segments(MARGIN + 30, ty, segments, 8.5, DEEP_BLUE)
 
     # ── Page 3: Peakweb GEO Services + CTA ────────────────────────────────────
 
