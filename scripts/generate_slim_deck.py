@@ -628,12 +628,15 @@ class SlimDeckGenerator:
                 "but doesn't appear when customers ask AI assistants the same question."
             )
             lines = self._wrap(insight, FONT_LIGHT, 9, CW - 24)
-            ty = callout_y + callout_h - 14
-            for ln in lines[:3]:
+            line_h = 13
+            n = min(len(lines), 3)
+            # Start so the whole text block is vertically centred in the box
+            ty = callout_y + callout_h / 2 + (n - 1) * line_h / 2
+            for ln in lines[:n]:
                 self.c.setFillColorRGB(*STONE)
                 self.c.setFont(FONT_LIGHT, 9)
                 self.c.drawString(MARGIN + 14, ty, ln)
-                ty -= 13
+                ty -= line_h
 
     # ── Page 2: Your GEO Snapshot + The Risk ──────────────────────────────────
 
@@ -828,23 +831,21 @@ class SlimDeckGenerator:
         y_after_cards = row2_y - 14
 
         # ── Pricing line ───────────────────────────────────────────────────
-        pricing_h = 40
+        pricing_h = 48
         pricing_y = y_after_cards - pricing_h
         self.c.setFillColorRGB(*STONE)
         self.c.roundRect(MARGIN, pricing_y, CW, pricing_h, 5, fill=1, stroke=0)
         self.c.setFillColorRGB(*AQUAMARINE)
         self.c.rect(MARGIN, pricing_y, 4, pricing_h, fill=1, stroke=0)
-        pricing_text = (
-            "Starting at $999 for GEO Essentials  ·  "
-            "Audit  ·  Technical fixes  ·  Schema  ·  AI config files  ·  30-day monitoring"
-        )
-        lines = self._wrap(pricing_text, FONT_LIGHT, 8.5, CW - 22)
-        pty = pricing_y + pricing_h - 12
-        for ln in lines[:2]:
-            self.c.setFillColorRGB(*DEEP_BLUE)
-            self.c.setFont(FONT_LIGHT, 8.5)
-            self.c.drawString(MARGIN + 14, pty, ln)
-            pty -= 13
+
+        line1 = "Peakweb GEO Essentials  \u00b7  Audit  \u00b7  Technical fixes  \u00b7  Schema  \u00b7  AI config files  \u00b7  30-day monitoring"
+        line2 = "Starting at $999"
+        line_h = 14
+        cx = MARGIN + CW / 2
+        # Vertically centre the two-line block
+        pty = pricing_y + pricing_h / 2 + line_h / 2
+        self._text_centered(cx, pty, line1, 8.5, DEEP_BLUE)
+        self._sb_centered(cx, pty - line_h, line2, 10, DEEP_BLUE)
 
         y_after_pricing = pricing_y - 12
 
