@@ -43,7 +43,7 @@ SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_DIR = os.path.dirname(SCRIPT_DIR)
 FONTS_DIR = os.path.join(PROJECT_DIR, "assets/fonts")
 LOGO_PATH = os.path.join(PROJECT_DIR, "assets/PeakWeb-Green-RGB.png")
-LOGO_STONE_BLUE_PATH = os.path.join(PROJECT_DIR, "assets/Stone-Blue.jpg")
+LOGO_STONE_BLUE_PATH = os.path.join(PROJECT_DIR, "assets/Stone-Blue.png")
 W_CHEVRON_PATH = os.path.join(PROJECT_DIR, "assets/PeakWeb-W-Chevron.png")
 
 # ─── Page dimensions ──────────────────────────────────────────────────────────
@@ -753,7 +753,7 @@ class SlimDeckGenerator:
 
     def _page_3(self):
         self._new_page(bg=DEEP_BLUE)
-        self._draw_header(dark_bg=True, logo_path=LOGO_STONE_BLUE_PATH)
+        self._draw_header(dark_bg=True)
         self._draw_footer(text_color=AQUAMARINE, line_color=AQUAMARINE)
 
         # Title (no Stone band — dark page)
@@ -819,12 +819,12 @@ class SlimDeckGenerator:
         self.c.setFillColorRGB(*AQUAMARINE)
         self.c.roundRect(MARGIN, cta_y, CW, cta_h, 8, fill=1, stroke=0)
 
-        # W-chevron in lower-right of CTA box
-        if os.path.exists(W_CHEVRON_PATH):
-            chev_size = min(cta_h * 0.6, 70)
+        # Stone-Blue logo in lower-right of CTA box (transparent PNG)
+        if os.path.exists(LOGO_STONE_BLUE_PATH):
+            chev_size = min(cta_h * 0.7, 90)
             chev_x = MARGIN + CW - chev_size - 8
             chev_y = cta_y + 6
-            self.c.drawImage(W_CHEVRON_PATH,
+            self.c.drawImage(LOGO_STONE_BLUE_PATH,
                              chev_x, chev_y,
                              width=chev_size, height=chev_size,
                              mask='auto')

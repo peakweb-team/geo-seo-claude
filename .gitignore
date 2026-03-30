@@ -49,6 +49,9 @@ screenshots/
 *.png
 *.jpg
 *.jpeg
+!assets/*.png
+!assets/*.jpg
+!assets/*.jpeg
 !schema/*.json
 
 # Test files
