@@ -369,6 +369,11 @@ class SlimDeckGenerator:
 
     # ── compound drawing helpers ──────────────────────────────────────────────
 
+    def _full_width_rect(self, y, h, color):
+        """Draw a full-page-width filled rect (overridable for bleed variants)."""
+        self.c.setFillColorRGB(*color)
+        self.c.rect(0, y, PAGE_WIDTH, h, fill=1, stroke=0)
+
     def _section_title_band(self, title, y_top=747, band_h=50):
         """Stone background section title bar just below the header."""
         self.c.setFillColorRGB(*STONE)
@@ -621,8 +626,7 @@ class SlimDeckGenerator:
         # ── "THE OPPORTUNITY" band ─────────────────────────────────────────
         opp_band_h = 28
         opp_band_y = y_after_badges - opp_band_h
-        self.c.setFillColorRGB(*DEEP_BLUE)
-        self.c.rect(0, opp_band_y, PAGE_WIDTH, opp_band_h, fill=1, stroke=0)
+        self._full_width_rect(opp_band_y, opp_band_h, DEEP_BLUE)
         self._sb_centered(PAGE_WIDTH / 2, opp_band_y + 9,
                           "THE OPPORTUNITY", 11, AQUAMARINE)
 
@@ -788,8 +792,7 @@ class SlimDeckGenerator:
         risk_hdr_h = 28
         risk_hdr_y = y_after_bar - risk_hdr_h
         # Amber header band
-        self.c.setFillColorRGB(*AMBER)
-        self.c.rect(0, risk_hdr_y, PAGE_WIDTH, risk_hdr_h, fill=1, stroke=0)
+        self._full_width_rect(risk_hdr_y, risk_hdr_h, AMBER)
         self._sb_centered_with_emoji(
             PAGE_WIDTH / 2, risk_hdr_y + 9,
             "\U0001f680",
