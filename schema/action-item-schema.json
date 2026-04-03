@@ -1,0 +1,133 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://peakweb.co/schemas/geo-action-item/v1",
+  "title": "GEO Action Item",
+  "description": "A single actionable recommendation in a GEO AI Visibility Roadmap. Designed to be forward-compatible with a web dashboard.",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "category",
+    "scoreComponent",
+    "controlLevel",
+    "difficultyLevel",
+    "estimatedScoreImpact",
+    "timeHorizon",
+    "peakwebFit",
+    "priorityScore",
+    "status"
+  ],
+  "properties": {
+    "id": {
+      "type": "string",
+      "description": "Snake-case unique identifier, e.g. 'publish_llms_txt'",
+      "pattern": "^[a-z][a-z0-9_]*$"
+    },
+    "title": {
+      "type": "string",
+      "description": "Short, action-oriented title shown in roadmap tables and headings"
+    },
+    "category": {
+      "type": "string",
+      "description": "Broad category grouping for display",
+      "enum": ["technical", "schema", "content", "brand", "platform"]
+    },
+    "scoreComponent": {
+      "type": "string",
+      "description": "Which GEO scoring component this primarily affects",
+      "enum": [
+        "technical",
+        "schema",
+        "content_eeat",
+        "brand_authority",
+        "ai_citability",
+        "platform_optimization",
+        "multiple"
+      ]
+    },
+    "sourceFinding": {
+      "type": "string",
+      "description": "The raw finding from the audit that triggered this action item (populated at generation time)"
+    },
+    "description": {
+      "type": "string",
+      "description": "One or two sentence plain-English description of what the action involves"
+    },
+    "whyItMatters": {
+      "type": "string",
+      "description": "Why AI systems care about this signal, in customer-facing language. Avoid 'ranking for prompt X' framing."
+    },
+    "controlLevel": {
+      "type": "string",
+      "description": "How much direct control the business has over implementing this",
+      "enum": ["direct", "mixed", "indirect"]
+    },
+    "difficultyLevel": {
+      "type": "string",
+      "description": "Implementation difficulty estimate",
+      "enum": ["low", "medium", "high", "very_high"]
+    },
+    "estimatedScoreImpact": {
+      "type": "string",
+      "description": "Expected improvement to GEO score if fully implemented",
+      "enum": ["low", "medium", "high", "very_high"]
+    },
+    "priorityScore": {
+      "type": "integer",
+      "description": "Computed 0-100 priority score. Higher = act sooner. Deterministic — see action_plan_generator.py.",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "peakwebFit": {
+      "type": "string",
+      "description": "How Peakweb fits into delivering this action",
+      "enum": ["direct_service", "partner_referral", "advisory_only"]
+    },
+    "timeHorizon": {
+      "type": "string",
+      "description": "When this should realistically be addressed",
+      "enum": ["immediate", "near_term", "long_term"]
+    },
+    "isFoundational": {
+      "type": "boolean",
+      "description": "True if this action unblocks or amplifies other actions (foundational items get priority bonus)"
+    },
+    "affectedPlatforms": {
+      "type": "array",
+      "description": "Which AI platforms benefit from this action",
+      "items": {
+        "type": "string",
+        "enum": ["ChatGPT", "Perplexity", "Claude", "Gemini", "Google AI Overviews", "Bing Copilot"]
+      }
+    },
+    "implementationNotes": {
+      "type": "string",
+      "description": "Concise implementation guidance for whoever does the work"
+    },
+    "platformSpecificNotes": {
+      "type": "string",
+      "description": "Notes tailored to the detected CMS or platform (e.g. WordPress, Shopify)"
+    },
+    "customerSpecificRecommendation": {
+      "type": "string",
+      "description": "Recommendation copy tailored to this specific customer's context and business type"
+    },
+    "evidence": {
+      "type": "string",
+      "description": "Specific findings from the audit that back up this action item"
+    },
+    "dependencies": {
+      "type": "array",
+      "description": "IDs of other action items that should be completed before or alongside this one",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "type": "string",
+      "description": "Current completion status (default: not_started)",
+      "enum": ["not_started", "in_progress", "complete", "deferred", "not_applicable"]
+    }
+  },
+  "additionalProperties": false
+}
