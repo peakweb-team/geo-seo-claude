@@ -32,6 +32,7 @@ allowed-tools: Read, Grep, Glob, Bash, WebFetch, Write
 | `/geo-peakweb proposal <domain>` | Auto-generate client proposal from audit data |
 | `/geo-peakweb pitch-deck <domain>` | Generate Peakweb-branded pitch deck PDF |
 | `/geo-peakweb sow <domain>` | Generate Statement of Work PDF for client engagement |
+| `/geo-peakweb roadmap <domain>` | Generate prioritized AI Visibility Roadmap and Action Plan |
 | `/geo-peakweb compare <domain>` | Monthly delta report: show score improvements to client |
 
 ---
@@ -145,6 +146,7 @@ Adjust recommendations based on detected type. Local businesses need LocalBusine
 | 13 | geo-pitch-deck | `skills/geo-pitch-deck/` | Peakweb-branded pitch deck PDF generation |
 | 14 | geo-compare | `skills/geo-compare/` | Monthly delta tracking and progress reports |
 | 15 | geo-sow | `skills/geo-sow/` | Statement of Work PDF generation |
+| 16 | geo-roadmap | `skills/geo-roadmap/` | Prioritized action plan from audit findings |
 
 ---
 
@@ -183,6 +185,7 @@ All commands generate structured output:
 | `/geo-peakweb proposal` | `~/.geo-prospects/proposals/<domain>-proposal-<date>.md` |
 | `/geo-peakweb pitch-deck` | `PeakwebGEOProposal-{ClientName}.pdf` |
 | `/geo-peakweb sow` | `PeakwebSOW-{ClientName}-{Date}.pdf` |
+| `/geo-peakweb roadmap` | `GEO-ROADMAP.md` + optional `GEO-ROADMAP.pdf` |
 | `/geo-peakweb compare` | `~/.geo-prospects/reports/<domain>-monthly-<YYYY-MM>.md` |
 
 ---
