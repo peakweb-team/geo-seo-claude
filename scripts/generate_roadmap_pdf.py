@@ -377,28 +377,37 @@ def _page_executive_summary(c: canvas.Canvas, data: dict, page_num: list):
     # Top action callout
     if action_items:
         top = action_items[0]
+        why_text = top.get("whyItMatters", "")
+        callout_w = PAGE_WIDTH - 2 * MARGIN - 20
+        style_callout = ParagraphStyle("callout", fontName=FONT_REGULAR, fontSize=9, leading=13,
+                                       textColor=colors.Color(0.3, 0.3, 0.3))
+        p_callout = Paragraph(why_text, style_callout)
+        _, h_callout = p_callout.wrap(callout_w, 200)
+        # box: label(14) + title(18) + why_text + badges(20) + padding(16)
+        box_h = 14 + 18 + h_callout + 6 + 20 + 16
         c.setFillColorRGB(*STONE)
-        c.rect(MARGIN, y - 46, PAGE_WIDTH - 2 * MARGIN, 54, fill=1, stroke=0)
+        c.rect(MARGIN, y - box_h + 8, PAGE_WIDTH - 2 * MARGIN, box_h, fill=1, stroke=0)
+        inner_y = y + 2
         c.setFillColorRGB(*DEEP_BLUE)
         c.setFont(FONT_BOLD, 9)
-        c.drawString(MARGIN + 10, y + 2, "TOP PRIORITY ACTION")
+        c.drawString(MARGIN + 10, inner_y, "TOP PRIORITY ACTION")
+        inner_y -= 16
         c.setFont(FONT_BOLD, 11)
-        c.drawString(MARGIN + 10, y - 12, top.get("title", ""))
-        c.setFont(FONT_REGULAR, 9)
-        c.setFillColor(colors.Color(0.3, 0.3, 0.3))
-        why = top.get("whyItMatters", "")[:140] + ("..." if len(top.get("whyItMatters", "")) > 140 else "")
-        c.drawString(MARGIN + 10, y - 26, why)
+        c.drawString(MARGIN + 10, inner_y, top.get("title", ""))
+        inner_y -= 6
+        p_callout.drawOn(c, MARGIN + 10, inner_y - h_callout)
+        inner_y -= h_callout + 8
         # Badges
         bx = MARGIN + 10
         _badge(c, _fmt_impact(top.get("estimatedScoreImpact", "")),
-               bx, y - 46, _impact_colour(top.get("estimatedScoreImpact", "")), 62)
+               bx, inner_y - 14, _impact_colour(top.get("estimatedScoreImpact", "")), 62)
         bx += 70
         _badge(c, _fmt_diff(top.get("difficultyLevel", "")),
-               bx, y - 46, _difficulty_colour(top.get("difficultyLevel", "")), 56)
+               bx, inner_y - 14, _difficulty_colour(top.get("difficultyLevel", "")), 56)
         bx += 64
         _badge(c, _fmt_horizon(top.get("timeHorizon", "")),
-               bx, y - 46, _horizon_colour(top.get("timeHorizon", "")), 68)
-        y -= 80
+               bx, inner_y - 14, _horizon_colour(top.get("timeHorizon", "")), 68)
+        y -= box_h + 10
 
     # Category scores table
     cat_scores = data.get("category_scores", {})
@@ -457,16 +466,43 @@ def _page_top_priorities(c: canvas.Canvas, data: dict, page_num: list):
     c.drawString(MARGIN, y, "Highest combined score impact, feasibility, and urgency")
     y -= 22
 
-    card_h = 100
     card_gap = 8
     content_w = PAGE_WIDTH - 2 * MARGIN
+    text_w = content_w - 50  # left indent (10) + rank circle area (40)
+
+    style_why = ParagraphStyle("why", fontName=FONT_REGULAR, fontSize=8, leading=11,
+                               textColor=colors.Color(0.2, 0.2, 0.2))
+    style_rec = ParagraphStyle("rec", fontName=FONT_ITALIC, fontSize=8, leading=11,
+                               textColor=colors.Color(0.1, 0.1, 0.1))
+    style_evi = ParagraphStyle("evi", fontName=FONT_REGULAR, fontSize=7, leading=10,
+                               textColor=C_MUTED_BLUE)
+
+    HEADER_H = 50   # space reserved for title + badges before text blocks
+    TEXT_GAP = 5    # vertical gap between text blocks
+    BOTTOM_PAD = 10
 
     for i, item in enumerate(top_5):
+        why_text = item.get("whyItMatters", "")
+        rec_text = item.get("customerSpecificRecommendation") or item.get("implementationNotes", "")
+        evi_text = item.get("evidence", "")
+
+        p_why = Paragraph(why_text, style_why) if why_text else None
+        p_rec = Paragraph(f"Next step: {rec_text}", style_rec) if rec_text else None
+        p_evi = Paragraph(f"Audit evidence: {evi_text}", style_evi) if evi_text else None
+
+        _, h_why = p_why.wrap(text_w, 400) if p_why else (0, 0)
+        _, h_rec = p_rec.wrap(text_w, 400) if p_rec else (0, 0)
+        _, h_evi = p_evi.wrap(text_w, 400) if p_evi else (0, 0)
+
+        text_total = (h_why
+                      + (TEXT_GAP + h_rec if p_rec else 0)
+                      + (TEXT_GAP + h_evi if p_evi else 0))
+        card_h = max(HEADER_H + text_total + BOTTOM_PAD, 90)
+
         if y - card_h < MARGIN + 20:
-            break  # avoid overflow
+            break
 
         # Card background
-        card_bg = STONE if i % 2 == 0 else (248/255, 252/255, 255/255, 1)
         c.setFillColorRGB(*STONE)
         c.roundRect(MARGIN, y - card_h, content_w, card_h, 5, fill=1, stroke=0)
 
@@ -504,29 +540,19 @@ def _page_top_priorities(c: canvas.Canvas, data: dict, page_num: list):
             _badge(c, badge_text, bx, by, badge_col, badge_w)
             bx += badge_w + 6
 
-        # Why it matters (truncated)
-        why = item.get("whyItMatters", "")
-        if len(why) > 160:
-            why = why[:157] + "..."
-        c.setFillColor(colors.Color(0.2, 0.2, 0.2))
-        c.setFont(FONT_REGULAR, 8)
-        c.drawString(MARGIN + 10, y - 50, why)
-
-        # Recommendation (truncated)
-        rec = item.get("customerSpecificRecommendation") or item.get("implementationNotes", "")
-        if rec:
-            if len(rec) > 155:
-                rec = rec[:152] + "..."
-            c.setFillColor(colors.Color(0.1, 0.1, 0.1))
-            c.setFont(FONT_ITALIC, 8)
-            c.drawString(MARGIN + 10, y - 64, f"Next step: {rec}")
-
-        # Evidence
-        evidence = item.get("evidence", "")
-        if evidence:
-            c.setFillColor(C_MUTED_BLUE)
-            c.setFont(FONT_REGULAR, 7)
-            c.drawString(MARGIN + 10, y - 76, f"Audit evidence: {evidence[:130]}")
+        # Text content — stacked Paragraphs
+        text_y = y - HEADER_H
+        if p_why:
+            text_y -= h_why
+            p_why.drawOn(c, MARGIN + 10, text_y)
+            text_y -= TEXT_GAP
+        if p_rec:
+            text_y -= h_rec
+            p_rec.drawOn(c, MARGIN + 10, text_y)
+            text_y -= TEXT_GAP
+        if p_evi:
+            text_y -= h_evi
+            p_evi.drawOn(c, MARGIN + 10, text_y)
 
         y -= card_h + card_gap
 
@@ -553,16 +579,23 @@ def _page_full_action_plan(c: canvas.Canvas, data: dict, page_num: list):
     y -= 22
 
     # Build table data
-    col_widths = [24, 154, 52, 52, 64, 60, 38]  # total ~444
-    header = ["#", "Action", "Impact", "Difficulty", "Timeline", "Peakweb Fit", "Score"]
-    table_data = [header]
+    # Available width = PAGE_WIDTH - 2*MARGIN = 504pt; Action column gets the remainder
+    fixed_cols = [24, 52, 52, 64, 60, 38]   # #, Impact, Difficulty, Timeline, Peakweb, Score
+    action_col_w = (PAGE_WIDTH - 2 * MARGIN) - sum(fixed_cols)  # ~214pt
+    col_widths = [24, action_col_w, 52, 52, 64, 60, 38]
 
-    CONTROL_LABELS_SHORT = {"direct": "Direct", "mixed": "Mixed", "indirect": "Indirect"}
+    style_cell = ParagraphStyle("cell", fontName=FONT_REGULAR, fontSize=8, leading=11,
+                                textColor=colors.Color(0.1, 0.1, 0.1))
+    style_hdr  = ParagraphStyle("hdr",  fontName=FONT_BOLD,    fontSize=8, leading=11,
+                                textColor=colors.white)
+
+    header = ["#", Paragraph("Action", style_hdr), "Impact", "Difficulty", "Timeline", "Peakweb Fit", "Score"]
+    table_data = [header]
 
     for i, item in enumerate(action_items, 1):
         table_data.append([
             str(i),
-            item.get("title", ""),
+            Paragraph(item.get("title", ""), style_cell),
             _fmt_impact(item.get("estimatedScoreImpact", "")),
             _fmt_diff(item.get("difficultyLevel", "")),
             _fmt_horizon(item.get("timeHorizon", "")),
@@ -570,7 +603,7 @@ def _page_full_action_plan(c: canvas.Canvas, data: dict, page_num: list):
             str(item.get("priorityScore", 0)),
         ])
 
-    row_h = 16
+    row_h = 20  # slightly taller to allow wrapping room
     rows_per_page = int((y - MARGIN - 30) / row_h)
     chunks = [table_data[i:i + rows_per_page] for i in range(0, len(table_data), rows_per_page)]
 
@@ -590,8 +623,8 @@ def _page_full_action_plan(c: canvas.Canvas, data: dict, page_num: list):
             ("ALIGN", (0, 0), (-1, -1), "LEFT"),
             ("ALIGN", (6, 0), (6, -1), "CENTER"),
             ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
-            ("TOPPADDING",    (0, 0), (-1, -1), 3),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+            ("TOPPADDING",    (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
             ("LEFTPADDING",   (0, 0), (-1, -1), 4),
             ("GRID", (0, 0), (-1, -1), 0.3, colors.Color(0.8, 0.8, 0.8)),
         ]
@@ -635,22 +668,28 @@ def _page_peakweb_services(c: canvas.Canvas, data: dict, page_num: list):
     c.drawString(MARGIN, y, "Who Does What")
     y -= 30
 
+    style_note = ParagraphStyle("note", fontName=FONT_REGULAR, fontSize=8, leading=11,
+                                textColor=colors.Color(0.25, 0.25, 0.25))
+
     def _render_group(title: str, items: list, bg_colour, y_pos: float) -> float:
         if not items:
             return y_pos
         y_pos = _draw_section_heading(c, title, y_pos, bg_colour)
+        note_w = PAGE_WIDTH - 2 * MARGIN - 10
         for item in items:
             c.setFillColorRGB(*DEEP_BLUE)
             c.setFont(FONT_BOLD, 9)
             c.drawString(MARGIN, y_pos, f"• {item.get('title', '')}")
-            y_pos -= 12
-            note = (item.get("customerSpecificRecommendation") or item.get("implementationNotes", ""))[:160]
-            if note:
-                c.setFillColor(colors.Color(0.25, 0.25, 0.25))
-                c.setFont(FONT_REGULAR, 8)
-                c.drawString(MARGIN + 10, y_pos, note)
-                y_pos -= 12
-            y_pos -= 4
+            y_pos -= 6
+            note_text = item.get("customerSpecificRecommendation") or item.get("implementationNotes", "")
+            if note_text:
+                p_note = Paragraph(note_text, style_note)
+                _, h_note = p_note.wrap(note_w, 200)
+                y_pos -= h_note
+                p_note.drawOn(c, MARGIN + 10, y_pos)
+                y_pos -= 18  # generous gap after note to visually separate from next title
+            else:
+                y_pos -= 10
             if y_pos < MARGIN + 40:
                 break
         return y_pos
@@ -687,12 +726,18 @@ def _page_quick_wins(c: canvas.Canvas, data: dict, page_num: list):
     y -= 22
 
     if quick_wins:
-        col_widths_qw = [160, 55, 55, 85, 90]
-        header_qw = ["Action", "Impact", "Difficulty", "Timeline", "Peakweb Fit"]
+        fixed_qw = [55, 55, 85, 90]   # Impact, Difficulty, Timeline, Peakweb Fit
+        action_qw_w = (PAGE_WIDTH - 2 * MARGIN) - sum(fixed_qw)  # ~219pt
+        col_widths_qw = [action_qw_w] + fixed_qw
+        style_qw_cell = ParagraphStyle("qwcell", fontName=FONT_REGULAR, fontSize=8, leading=11,
+                                       textColor=colors.Color(0.1, 0.1, 0.1))
+        style_qw_hdr  = ParagraphStyle("qwhdr",  fontName=FONT_BOLD,    fontSize=8, leading=11,
+                                       textColor=colors.white)
+        header_qw = [Paragraph("Action", style_qw_hdr), "Impact", "Difficulty", "Timeline", "Peakweb Fit"]
         rows_qw = [header_qw]
         for item in quick_wins[:12]:
             rows_qw.append([
-                item.get("title", ""),
+                Paragraph(item.get("title", ""), style_qw_cell),
                 _fmt_impact(item.get("estimatedScoreImpact", "")),
                 _fmt_diff(item.get("difficultyLevel", "")),
                 _fmt_horizon(item.get("timeHorizon", "")),
@@ -704,8 +749,8 @@ def _page_quick_wins(c: canvas.Canvas, data: dict, page_num: list):
             ("FONTNAME",      (0, 0), (-1, 0), FONT_BOLD),
             ("FONTSIZE",      (0, 0), (-1, -1), 8),
             ("ROWBACKGROUNDS", (0, 1), (-1, -1), [colors.white, C_SCORE_BAR_BG]),
-            ("TOPPADDING",    (0, 0), (-1, -1), 3),
-            ("BOTTOMPADDING", (0, 0), (-1, -1), 3),
+            ("TOPPADDING",    (0, 0), (-1, -1), 4),
+            ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
             ("LEFTPADDING",   (0, 0), (-1, -1), 4),
             ("GRID", (0, 0), (-1, -1), 0.3, colors.Color(0.8, 0.8, 0.8)),
         ]
