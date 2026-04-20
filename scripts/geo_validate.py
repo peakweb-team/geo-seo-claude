@@ -27,6 +27,12 @@ except ImportError:
     print("Error: requests library required. Install with: pip install requests")
     sys.exit(1)
 
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # dotenv optional — fall back to environment variables
+
 
 PERPLEXITY_API_URL = "https://api.perplexity.ai/chat/completions"
 
