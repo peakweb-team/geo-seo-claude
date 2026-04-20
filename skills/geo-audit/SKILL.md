@@ -199,7 +199,6 @@ Every issue found during the audit is classified by severity:
 
 ### High (Fix Within 1 Week)
 - Key AI crawlers (GPTBot, ClaudeBot, PerplexityBot) blocked
-- No llms.txt file present
 - Zero question-answering content blocks on key pages
 - Missing Organization or LocalBusiness schema
 - No author attribution on content pages
@@ -207,6 +206,7 @@ Every issue found during the audit is classified by severity:
 
 ### Medium (Fix Within 1 Month)
 - Partial AI crawler blocking (some allowed, some blocked)
+- No llms.txt file present (emerging standard, limited AI platform adoption today)
 - llms.txt exists but is incomplete or malformed
 - Content blocks average under 50 citability score
 - Missing FAQ schema on pages with FAQ content

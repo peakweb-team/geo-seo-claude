@@ -82,6 +82,13 @@ Expertise reflects the content creator's knowledge depth and qualifications.
 
 Authoritativeness reflects the site's and author's reputation in the topic space.
 
+**Finding the About page — use this order, stop when found:**
+1. **Sitemap**: Fetch `/sitemap.xml` (or the sitemap URL in `robots.txt`). Scan for URLs whose path or `<title>`/`<image:title>` contains words like "about", "team", "who-we-are", "company", "our-story".
+2. **Navigation scraping**: If no sitemap hit, fetch the homepage and inspect the main navigation links for labels such as "About", "About Us", "Our Team", "Who We Are", "Company", etc. Follow the first matching link.
+3. **Only if both fail**: Try `/about`, `/about-us`, `/about_us`, `/who-we-are` as a last resort.
+
+Do **not** conclude that an about page is absent until all three steps have been tried.
+
 **Check for these signals:**
 
 | Signal | Present? | Strength |

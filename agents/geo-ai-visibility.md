@@ -239,3 +239,4 @@ Citation-unlikely areas needing improvement:
 - Citability scoring must be applied to actual content blocks, not page metadata.
 - The AI Visibility Score is the single most important GEO metric in the full audit.
 - When scanning brand mentions, use the business name as it appears on the site, not the domain name (unless they are the same).
+- **llms.txt priority**: Despite scoring 0 when absent, llms.txt has limited real-world AI platform adoption today. Do NOT list it as a HIGH priority action. At most, recommend it as MEDIUM or LOW — after crawler access, citability, brand authority, and schema are addressed.
