@@ -152,7 +152,9 @@ NOTE: INP replaced FID (First Input Delay) as a Core Web Vital in March 2024.
 
 ### Step 8: Server-Side Rendering and JavaScript Dependency (CRITICAL)
 
-This is the most important check for GEO. AI crawlers (GPTBot, ClaudeBot, PerplexityBot) generally do NOT execute JavaScript. Content that requires JS to render is invisible to AI search.
+This is an important check for GEO. AI crawlers (GPTBot, ClaudeBot, PerplexityBot) generally do NOT execute JavaScript. Content that exists only in JS-rendered DOM is not available to these crawlers.
+
+**IMPORTANT: Always verify before claiming.** Fetch the actual page with `curl -s <URL>` and inspect what IS present in the raw HTML. Many e-commerce platforms (Shopify, WordPress + WooCommerce, Squarespace) server-render product names, prices, headings, and meta tags even when they rely on JS for image carousels, filtering, or interactive features. Do not claim "crawlers see nothing" without evidence.
 
 **Check for Client-Side Rendering Indicators:**
 - Empty or minimal `<body>` content with a single root div (e.g., `<div id="root"></div>` or `<div id="app"></div>`)
@@ -165,17 +167,17 @@ This is the most important check for GEO. AI crawlers (GPTBot, ClaudeBot, Perple
 - Content loaded via API calls (look for fetch/XHR patterns in inline scripts)
 
 **Check for Server-Side Rendering Signals:**
-- Full HTML content present in the initial response (paragraphs, headings, text content visible in raw HTML)
+- Text content (product names, headings, descriptions) present in the raw HTML
 - `__NEXT_DATA__` script tag (Next.js SSR/SSG)
 - `__NUXT__` or `__NUXT_DATA__` (Nuxt.js SSR/SSG)
 - `data-reactroot` or `data-server-rendered` attributes
 - Full meta tags rendered in initial HTML (not injected by JS)
 - Substantial text content in the HTML `<body>` before any script execution
 
-**Severity Assessment:**
-- **CRITICAL**: Page body is essentially empty without JS execution. AI crawlers see nothing.
-- **HIGH**: Main content is present but significant sections (navigation, sidebar, related content) require JS.
-- **MEDIUM**: Core content is server-rendered but interactive elements and secondary content require JS.
+**Severity Assessment — must be based on what you actually observe in raw HTML:**
+- **CRITICAL**: Page body is genuinely empty or near-empty without JS (e.g., single root div, no text content). Cite the URL tested.
+- **HIGH**: Some content is server-rendered (e.g., product names, prices) but key content like descriptions, editorial text, or entire page sections require JS. Specify what is missing.
+- **MEDIUM**: Core content is server-rendered but interactive elements and secondary content require JS. Product catalog is browsable without JS.
 - **LOW**: Fully server-rendered. JS enhances but does not create content.
 
 ### Step 9: Additional Technical Checks
