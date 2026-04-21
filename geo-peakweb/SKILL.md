@@ -97,7 +97,14 @@ This ensures all subagent reports are consolidated before final report generatio
 3. Generate prioritized action plan
 4. Output client-ready report to `~/.geo-prospects/audits/{domain}/`
 
-### Scoring Methodology
+### Scoring System — Two Topline Scores
+
+The audit produces **two separate scores**, each 0-100. These serve different purposes and should **not** be combined.
+
+#### Score 1 — GEO Readiness Score
+**"How prepared is the site to be cited by AI systems?"**
+
+A site-level readiness score from six weighted audit categories:
 
 | Category | Weight | Measured By |
 |----------|--------|-------------|
@@ -107,6 +114,23 @@ This ensures all subagent reports are consolidated before final report generatio
 | Technical Foundations | 15% | SSR, Core Web Vitals, crawlability, mobile, security |
 | Structured Data | 10% | Schema completeness, JSON-LD validation, rich result eligibility |
 | Platform Optimization | 10% | Platform-specific readiness (Google AIO, ChatGPT, Perplexity) |
+
+Computed by `scripts/geo_readiness.py`.
+
+#### Score 2 — AI Answer Share Score
+**"How much of AI's answers does this business actually own?"**
+
+A prompt-basket performance score from Perplexity Sonar query results. Measures how much of the generated answer is attributable to the client domain using **position-adjusted impression** — citations appearing earlier in the answer are weighted more heavily.
+
+Requires running `/geo-perplexity` first. Computed by `scripts/ai_answer_share.py`.
+
+| Rating | Score Range | Meaning |
+|--------|------------|---------|
+| Strong | 60-100 | Domain is a major source in AI answers |
+| Moderate | 40-59 | Domain appears meaningfully but competitors dominate |
+| Weak | 20-39 | Domain appears sporadically |
+| Minimal | 5-19 | Domain is barely visible |
+| Not Visible | 0-4 | Domain does not appear in AI answers |
 
 ---
 

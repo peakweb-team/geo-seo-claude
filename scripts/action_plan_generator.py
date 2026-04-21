@@ -88,7 +88,7 @@ ACTION_CATALOG = {
         "controlLevel": "direct",
         "difficultyLevel": "low",
         "estimatedScoreImpact": "low",
-        "timeHorizon": "short_term",
+        "timeHorizon": "near_term",
         "peakwebFit": "direct_service",
         "isFoundational": False,
         "affectedPlatforms": ["Claude", "some Perplexity configurations"],
@@ -1228,8 +1228,13 @@ def generate_roadmap_markdown(action_items: list, findings: dict) -> str:
     partner_items = [a for a in action_items if a.get("peakwebFit") != "direct_service"]
 
     lines = []
+    answer_share_score = findings.get("answer_share_score")
+    answer_share_rating = findings.get("answer_share_rating")
+
     lines.append(f"# AI Visibility Roadmap — {brand}")
-    lines.append(f"> Generated {today} | GEO Score: {geo_score}/100 ({score_label})")
+    lines.append(f"> Generated {today} | GEO Readiness Score: {geo_score}/100 ({score_label})")
+    if answer_share_score is not None:
+        lines.append(f"> AI Answer Share Score: {answer_share_score}/100 ({answer_share_rating})")
     if url:
         lines.append(f"> Site: {url}")
     if bt != "unknown":
@@ -1389,7 +1394,7 @@ def generate_roadmap_markdown(action_items: list, findings: dict) -> str:
 
     lines.append("---")
     lines.append("")
-    lines.append("## Appendix: GEO Score Components Referenced")
+    lines.append("## Appendix: GEO Readiness Score Breakdown")
     lines.append("")
     lines.append("| Component | Weight | Your Score | Benchmark |")
     lines.append("|-----------|--------|------------|-----------|")
@@ -1410,6 +1415,29 @@ def generate_roadmap_markdown(action_items: list, findings: dict) -> str:
     lines.append("")
     lines.append("_Scores derived from GEO-AUDIT-REPORT.md. Run `/geo-peakweb audit` to refresh._")
     lines.append("")
+
+    # AI Answer Share appendix (if data available)
+    if answer_share_score is not None:
+        lines.append("---")
+        lines.append("")
+        lines.append("## Appendix: AI Answer Share Score")
+        lines.append("")
+        lines.append(f"**AI Answer Share Score: {answer_share_score}/100 ({answer_share_rating})**")
+        lines.append("")
+        lines.append("This score measures how much of AI-generated answers is attributable to")
+        lines.append(f"{brand} across a basket of test queries run against Perplexity Sonar.")
+        lines.append("Citations appearing earlier in answers are weighted more heavily (position-adjusted impression).")
+        lines.append("")
+        lines.append("_Run `/geo-perplexity` to measure or update this score._")
+        lines.append("")
+    else:
+        lines.append("---")
+        lines.append("")
+        lines.append("## Appendix: AI Answer Share Score")
+        lines.append("")
+        lines.append("**Not yet measured.** Run `/geo-perplexity` to test how much of AI answers")
+        lines.append(f"references {brand} across a basket of real queries.")
+        lines.append("")
 
     return "\n".join(lines)
 
@@ -1463,6 +1491,9 @@ def main():
         "brand_name": findings.get("brand_name", ""),
         "url": findings.get("url", ""),
         "geo_score": findings.get("geo_score", 0),
+        "geo_readiness_score": findings.get("geo_score", 0),  # alias for new terminology
+        "ai_answer_share_score": findings.get("answer_share_score"),
+        "ai_answer_share_rating": findings.get("answer_share_rating"),
         "business_type": findings.get("business_type", "unknown"),
         "platform": findings.get("platform", "unknown"),
         "category_scores": findings.get("category_scores", {}),

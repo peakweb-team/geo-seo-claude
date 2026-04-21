@@ -62,12 +62,14 @@ class TestPriorityScoring(unittest.TestCase):
         self.assertLess(score, 30,
             f"build_wikipedia_presence should score < 30, got {score}")
 
-    def test_publish_llms_txt_scores_reasonably_high(self):
-        """llms.txt is direct, low difficulty, immediate, high impact."""
+    def test_publish_llms_txt_scores_moderate(self):
+        """llms.txt is direct, low difficulty, but low impact and near-term."""
         item = ACTION_CATALOG["publish_llms_txt"]
         score = compute_priority_score(item)
-        self.assertGreater(score, 65,
-            f"publish_llms_txt should score > 65, got {score}")
+        self.assertGreater(score, 25,
+            f"publish_llms_txt should score > 25, got {score}")
+        self.assertLess(score, 60,
+            f"publish_llms_txt should score < 60 (low impact), got {score}")
 
     def test_wikidata_scores_above_wikipedia(self):
         """Wikidata is indirect but medium difficulty — should beat Wikipedia."""
@@ -129,19 +131,24 @@ class TestLocalBusinessMissingBasics(unittest.TestCase):
         self.assertEqual(self.ids[0], "unblock_ai_crawlers",
             f"Expected unblock_ai_crawlers at rank 1, got: {self.ids[:3]}")
 
-    def test_publish_llms_txt_in_top_5(self):
-        self.assertIn("publish_llms_txt", self.ids[:5],
-            f"publish_llms_txt not in top 5: {self.ids[:5]}")
+    def test_publish_llms_txt_in_plan(self):
+        """llms.txt should be in the action plan (but not necessarily top 5 since low impact)."""
+        self.assertIn("publish_llms_txt", self.ids,
+            f"publish_llms_txt not in action plan: {self.ids}")
 
     def test_local_business_schema_in_top_5(self):
         self.assertIn("add_local_business_schema", self.ids[:5],
             f"add_local_business_schema not in top 5: {self.ids[:5]}")
 
-    def test_all_three_are_immediate(self):
-        for action_id in ["unblock_ai_crawlers", "publish_llms_txt", "add_local_business_schema"]:
+    def test_critical_actions_are_immediate(self):
+        """High-impact foundational actions should be immediate."""
+        for action_id in ["unblock_ai_crawlers", "add_local_business_schema"]:
             item = next(a for a in self.items if a["id"] == action_id)
             self.assertEqual(item["timeHorizon"], "immediate",
                 f"{action_id} should be 'immediate', got '{item['timeHorizon']}'")
+        # llms.txt is near-term (low impact, intentionally downgraded)
+        llms = next(a for a in self.items if a["id"] == "publish_llms_txt")
+        self.assertEqual(llms["timeHorizon"], "near_term")
 
     def test_no_software_application_schema_for_local(self):
         """Local business should not trigger SaaS-specific actions."""
@@ -388,7 +395,8 @@ class TestMarkdownGeneration(unittest.TestCase):
             "Quick Wins",
             "Full Ranked Action Plan",
             "What Peakweb Can Implement",
-            "Appendix",
+            "GEO Readiness Score Breakdown",
+            "AI Answer Share Score",
         ]
         for section in required_sections:
             self.assertIn(section, md, f"Section '{section}' missing from roadmap markdown")

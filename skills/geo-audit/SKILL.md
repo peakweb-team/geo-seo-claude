@@ -155,9 +155,15 @@ mv *${DOMAIN_SLUG}*.md *${DOMAIN_SLUG}*.json "$DOMAIN/" 2>/dev/null
 
 ### Phase 3: Score Aggregation and Report Generation
 
-#### Composite GEO Score Calculation
+#### Two Topline Scores
 
-The overall GEO Score (0-100) is a weighted average of six category scores:
+The audit produces **two separate scores**, each 0-100. Do **not** combine them into a single master score.
+
+##### Score 1 — GEO Readiness Score
+
+**"How prepared is the site to be cited by AI systems?"**
+
+A site-level readiness score derived from six weighted audit categories:
 
 | Category | Weight | What It Measures |
 |---|---|---|
@@ -170,10 +176,10 @@ The overall GEO Score (0-100) is a weighted average of six category scores:
 
 **Formula:**
 ```
-GEO_Score = (Citability * 0.25) + (Brand * 0.20) + (EEAT * 0.20) + (Technical * 0.15) + (Schema * 0.10) + (Platform * 0.10)
+GEO_Readiness = (Citability × 0.25) + (Brand × 0.20) + (EEAT × 0.20) + (Technical × 0.15) + (Schema × 0.10) + (Platform × 0.10)
 ```
 
-#### Score Interpretation
+**Interpretation:**
 
 | Score Range | Rating | Interpretation |
 |---|---|---|
@@ -182,6 +188,38 @@ GEO_Score = (Citability * 0.25) + (Brand * 0.20) + (EEAT * 0.20) + (Technical * 
 | 60-74 | Fair | Moderate GEO presence; significant optimization opportunities exist |
 | 40-59 | Poor | Weak GEO signals; AI systems may struggle to cite or recommend |
 | 0-39 | Critical | Minimal GEO optimization; site is largely invisible to AI systems |
+
+Use `scripts/geo_readiness.py` for deterministic calculation.
+
+##### Score 2 — AI Answer Share Score
+
+**"How much of AI's answers does this business actually own?"**
+
+A prompt-basket performance score computed from Perplexity Sonar query results. This measures how much of the generated answer is attributable to the client domain, not just whether the domain is cited at all.
+
+**Key concept — Position-Adjusted Impression:**
+Citations appearing earlier in an AI answer carry more weight. A citation in the first sentence is worth more than one buried at the end. For each citation marker in the answer, the position weight is `1 / rank` where rank is the marker's position in the sequence.
+
+**Method:**
+1. Run 20-25 queries against Perplexity Sonar (via `/geo-perplexity`)
+2. For each query, parse the answer for citation markers ([1], [2], etc.)
+3. Map markers to source URLs; identify which belong to the client domain
+4. Compute position-adjusted share: `client_weights / total_weights`
+5. Average across all queries and scale to 0-100
+
+**Interpretation:**
+
+| Score Range | Rating | Interpretation |
+|---|---|---|
+| 60-100 | Strong | Domain is a major source in AI answers for its category |
+| 40-59 | Moderate | Domain appears meaningfully but competitors dominate |
+| 20-39 | Weak | Domain appears sporadically; most answer content comes from others |
+| 5-19 | Minimal | Domain is barely visible in AI answers |
+| 0-4 | Not Visible | Domain does not appear in AI-generated answers |
+
+Use `scripts/ai_answer_share.py` for deterministic calculation.
+
+**IMPORTANT:** The AI Answer Share Score requires a Perplexity API run and is computed separately from the GEO Readiness Score. If no Perplexity data is available, report only the GEO Readiness Score and note that the AI Answer Share Score requires running `/geo-perplexity`.
 
 ---
 
@@ -239,11 +277,21 @@ Generate a file called `GEO-AUDIT-REPORT.md` with the following structure:
 
 ## Executive Summary
 
-**Overall GEO Score: [X]/100 ([Rating])**
+### Topline Scores
+
+| Score | Value | Rating |
+|---|---|---|
+| **GEO Readiness Score** | **[X]/100** | [Rating] |
+| **AI Answer Share Score** | **[X]/100** | [Rating] |
+
+- **GEO Readiness** = "How prepared is the site to be cited by AI systems?"
+- **AI Answer Share** = "How much of AI's answers does this business actually own?"
 
 [2-3 sentence summary of the site's GEO health, biggest strengths, and most critical gaps.]
 
-### Score Breakdown
+> **Note:** If the AI Answer Share Score has not been measured yet (requires `/geo-perplexity`), report it as "Not yet measured" and recommend running the Perplexity citation test.
+
+### GEO Readiness Breakdown
 
 | Category | Score | Weight | Weighted Score |
 |---|---|---|---|
@@ -253,7 +301,7 @@ Generate a file called `GEO-AUDIT-REPORT.md` with the following structure:
 | Technical GEO | [X]/100 | 15% | [X] |
 | Schema & Structured Data | [X]/100 | 10% | [X] |
 | Platform Optimization | [X]/100 | 10% | [X] |
-| **Overall GEO Score** | | | **[X]/100** |
+| **GEO Readiness Score** | | | **[X]/100** |
 
 ---
 
@@ -403,14 +451,20 @@ Studies show that **30-115% more people** see businesses that are optimized for 
 
 ---
 
-## Your Current Score: [X]/100
+## Your Current Scores
 
-**What this means:**
+### GEO Readiness: [X]/100
+**"How ready is your website for AI search?"**
 - [Score interpretation in plain language]
 - [What the score means for their business]
 
+### AI Answer Share: [X]/100
+**"How much of AI's answers come from your business?"**
+- [Score interpretation — e.g. "When someone asks ChatGPT about [industry] in [city], only [X]% of the answer content references your business."]
+- [If not yet measured: "We haven't tested this yet — we'll run AI search queries to measure your actual visibility."]
+
 ### Think of it like curb appeal for your website:
-[Analogy that explains the score in relatable terms]
+[Analogy that explains the scores in relatable terms — Readiness is like having a well-maintained storefront; Answer Share is like how often the concierge actually recommends you]
 
 ---
 
