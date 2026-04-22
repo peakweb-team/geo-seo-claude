@@ -158,12 +158,13 @@ Compute the composite **AI Visibility Score (0-100)** using these weights:
 
 | Component | Weight |
 |---|---|
-| Citability Score | 35% |
-| Brand Mention Score | 30% |
+| Citability Score | 40% |
+| Brand Mention Score | 35% |
 | Crawler Access Score | 25% |
-| llms.txt Score | 10% |
 
-Formula: `AI_Visibility = (Citability * 0.35) + (Brand_Mentions * 0.30) + (Crawler_Access * 0.25) + (LLMS_TXT * 0.10)`
+Formula: `AI_Visibility = (Citability * 0.40) + (Brand_Mentions * 0.35) + (Crawler_Access * 0.25)`
+
+**Not scored:** llms.txt — Despite being an interesting emerging standard, AI platforms (ChatGPT, Perplexity, Gemini, Bing Copilot) do not use llms.txt for citation decisions. Note its presence/absence in the report but do not include it in the score calculation.
 
 ## Output Format
 

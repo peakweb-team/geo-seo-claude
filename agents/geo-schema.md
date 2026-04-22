@@ -256,20 +256,26 @@ Templates must:
 
 ### Step 8: Score Schema Completeness
 
-Compute the **Schema Score (0-100)**:
+Compute the **Schema Score (0-100)**. Weight criteria by their actual impact on AI citation — not by Google Rich Results compliance.
+
+**The test for every criterion: "Would fixing this change whether Perplexity/ChatGPT cites this business?"**
 
 | Component | Points | Criteria |
 |---|---|---|
-| Organization/LocalBusiness | 20 | Present (10), with sameAs to 3+ platforms (20) |
-| Article/content schema | 15 | Present (8), with author as Person (12), with dateModified (15) |
-| Person schema for author | 15 | Present (8), with sameAs (12), with jobTitle and knowsAbout (15) |
-| sameAs completeness | 15 | 1-2 platforms (5), 3-4 platforms (10), 5+ platforms including Wikipedia (15) |
-| speakable property | 10 | Present and properly targeting content sections (10) |
-| BreadcrumbList | 5 | Present and valid (5) |
-| WebSite + SearchAction | 5 | Present and valid (5) |
-| No deprecated schemas | 5 | No deprecated/removed schemas present (5) |
-| JSON-LD format | 5 | All schemas in JSON-LD, not Microdata/RDFa (5) |
-| Validation (no errors) | 5 | All schemas pass syntax and property validation (5) |
+| sameAs entity linking | 25 | Links to 1-2 platforms (8), 3-4 platforms (15), 5+ including Wikipedia or Wikidata (25). This is the single most impactful schema property for AI entity recognition. |
+| Organization/LocalBusiness identity | 20 | Present with name, url, description (10). With address, phone, foundingDate (15). With aggregateRating (20). |
+| Product/Service schema | 20 | Product or ProductGroup on PDPs with name, price, availability (15). With brand, SKU, images (20). Score 0 for non-commerce sites. Redistribute to other categories. |
+| Person schema for authors/staff | 15 | Present (5), with sameAs to professional profiles (10), with jobTitle and knowsAbout (15). |
+| Article schema on content pages | 10 | Present with author as Person, datePublished, publisher (10). |
+| FAQPage on FAQ content | 5 | Present on pages that contain Q&A content (5). |
+| BreadcrumbList | 3 | Present and valid (3). |
+| WebSite + SearchAction | 2 | Present on homepage (2). |
+
+**Not scored** (low/no AI citation impact):
+- JSON-LD vs Microdata format preference — AI parsers handle both
+- Minor validation errors (empty strings, http vs https context) — AI systems are tolerant
+- Deprecated schema presence — only flag if actively harmful
+- speakable property — aspirational standard with near-zero platform adoption
 
 ## Output Format
 

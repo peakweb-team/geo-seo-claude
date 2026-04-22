@@ -225,39 +225,46 @@ Use `scripts/ai_answer_share.py` for deterministic calculation.
 
 ## Issue Severity Classification
 
-Every issue found during the audit is classified by severity:
+Every issue found during the audit is classified by severity. **The test: "Would fixing this change whether AI systems cite or recommend this business?"**
 
 ### Critical (Fix Immediately)
 - All AI crawlers blocked in robots.txt
-- No indexable content (JavaScript-rendered only with no SSR)
+- No indexable content (page body genuinely empty in raw HTML — verified via curl, not assumed)
 - Domain-level noindex directive
 - Site returns 5xx errors on key pages
-- Complete absence of any structured data
-- Brand not recognized as an entity by any AI system
 
 ### High (Fix Within 1 Week)
 - Key AI crawlers (GPTBot, ClaudeBot, PerplexityBot) blocked
 - Zero question-answering content blocks on key pages
-- Missing Organization or LocalBusiness schema
-- No author attribution on content pages
+- No sameAs entity linking (AI systems can't connect the business to external knowledge)
+- No Organization or LocalBusiness schema
 - All content behind login/paywall with no preview
 
 ### Medium (Fix Within 1 Month)
-- Partial AI crawler blocking (some allowed, some blocked)
-- No llms.txt file present (emerging standard, limited AI platform adoption today)
-- llms.txt exists but is incomplete or malformed
+- sameAs links to fewer than 3 platforms
 - Content blocks average under 50 citability score
-- Missing FAQ schema on pages with FAQ content
-- Thin author bios without credentials
 - No Wikipedia or Reddit brand presence
+- No author attribution on content pages
+- Missing Product/ProductGroup schema on e-commerce PDPs
+- Missing FAQ schema on pages that contain Q&A content
 
 ### Low (Optimize When Possible)
-- Minor schema validation errors
-- Some images missing alt text
-- Content freshness issues on non-critical pages
-- Missing Open Graph tags
-- Suboptimal heading hierarchy on some pages
-- LinkedIn company page exists but is incomplete
+- No llms.txt file (emerging standard, limited AI platform adoption)
+- Thin author bios without credentials
+- Content freshness issues on time-sensitive pages only
+- LinkedIn company page incomplete
+- Missing BreadcrumbList schema
+
+### Not Scored (traditional SEO, not AI citation factors)
+Do not flag these as issues in GEO audit reports:
+- Minor schema validation errors (empty strings, http vs https context, HTML entities)
+- Image alt text coverage
+- Open Graph / Twitter Card tags
+- Heading hierarchy (H1 count, nesting depth)
+- URL slug quality
+- Security headers beyond HTTPS
+- Core Web Vitals scores
+- Page weight / image format optimization
 
 ---
 

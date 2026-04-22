@@ -197,21 +197,26 @@ This is an important check for GEO. AI crawlers (GPTBot, ClaudeBot, PerplexityBo
 
 ### Step 10: Calculate Technical Score
 
-Compute the **Technical Score (0-100)** using these category weights:
+Compute the **Technical Score (0-100)** using these category weights. Focus on what affects AI crawler access and content extraction — not traditional SEO compliance.
 
-| Category | Weight | Max Points |
+**The test for every criterion: "Would fixing this change whether Perplexity/ChatGPT cites this business?"**
+
+| Category | Weight | What It Measures |
 |---|---|---|
-| Server-Side Rendering / JS Dependency | 25% | 25 |
-| Meta Tags & Indexability | 15% | 15 |
-| Crawlability (robots.txt, sitemap) | 15% | 15 |
-| Security Headers | 10% | 10 |
-| Core Web Vitals Risk | 10% | 10 |
-| Mobile Optimization | 10% | 10 |
-| URL Structure | 5% | 5 |
-| Response Headers & Status | 5% | 5 |
-| Additional Checks | 5% | 5 |
+| Server-Side Rendering / JS Dependency | 35% | Can AI crawlers extract the content? This is the #1 technical factor. |
+| Crawlability (robots.txt, AI crawler access, sitemap) | 25% | Are AI crawlers allowed and can they discover pages? |
+| Meta Tags & Indexability | 15% | Are title, description, canonical present for AI to understand page purpose? |
+| Core Web Vitals / Page Speed | 5% | Does the page load fast enough for crawl budget? Only TTFB matters for AI. |
+| HTTPS | 5% | Basic trust signal. Binary: present or not. |
+| Mobile Optimization | 5% | AI crawlers use mobile UA. Basic viewport check. |
+| Structured Data Delivery | 10% | Is JSON-LD in server-rendered HTML (not JS-injected)? |
 
-SSR/JS Dependency has the highest weight because it is the single biggest factor determining whether AI crawlers can access content.
+**Not scored** (low/no AI citation impact):
+- URL structure (clean slugs vs query params) — AI cites content, not URLs
+- Security headers beyond HTTPS (HSTS, CSP, X-Frame-Options) — browser security, not AI signals
+- Image optimization (format, compression) — doesn't affect citation
+- Cache headers, CDN presence — infrastructure, not citation factors
+- Redirect chain depth — only matters if it blocks crawling entirely
 
 ## Output Format
 

@@ -228,20 +228,24 @@ Evaluate whether the site demonstrates topical authority in the subject area of 
 
 ### Step 10: Calculate Content Score
 
-Compute the **Content Score (0-100)** by combining:
+Compute the **Content Score (0-100)** by combining. Focus on what makes content citable by AI systems.
+
+**The test for every criterion: "Would improving this change whether Perplexity/ChatGPT cites this content?"**
 
 | Component | Weight | Max Points |
 |---|---|---|
 | Experience | 15% | 15 |
-| Expertise | 15% | 15 |
-| Authoritativeness | 15% | 15 |
-| Trustworthiness | 15% | 15 |
-| Content Metrics (depth, readability, structure) | 15% | 15 |
-| AI Content Assessment | 10% | 10 |
-| Topical Authority | 10% | 10 |
-| Content Freshness | 5% | 5 |
+| Expertise | 20% | 20 |
+| Authoritativeness | 20% | 20 |
+| Trustworthiness | 10% | 10 |
+| Content Depth & Structure | 20% | 20 |
+| Topical Authority | 15% | 15 |
 
-Normalize E-E-A-T scores from their 0-25 scale to 0-15 for weighting.
+Normalize E-E-A-T scores from their 0-25 scale to their respective max points for weighting.
+
+**Not scored** (low/no AI citation impact):
+- AI Content Assessment — Whether content is AI-generated does NOT prevent citation. Google has no penalty for AI content; AI systems routinely cite AI-generated articles. Do not score this.
+- Content Freshness as a standalone metric — Only flag staleness for time-sensitive topics (news, pricing, tech specs). Evergreen content (history, guides, expertise) is cited regardless of age. Assess freshness within the Expertise dimension where relevant, not as a separate score.
 
 ## Output Format
 
