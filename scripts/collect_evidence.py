@@ -252,7 +252,11 @@ def discover_key_pages(base_url, robots_body):
             elif 'collection' in child.lower():
                 candidates.append({"url": urls[0], "label": "Collection (sample)"})
             elif 'blog' in child.lower() or 'article' in child.lower():
-                candidates.append({"url": urls[0], "label": "Blog post (sample)"})
+                # urls[0] from a blog sitemap is an individual post, not the index
+                # Filter out bare /blogs/xxx index URLs (no second path segment)
+                post_urls = [u for u in urls if u.count('/') >= 5]
+                if post_urls:
+                    candidates.append({"url": post_urls[0], "label": "Blog post (sample)"})
             elif 'page' in child.lower():
                 # Already covered by static candidates, skip
                 pass
