@@ -226,14 +226,81 @@ Check:
 
 Based on gaps identified in Steps 2-6, generate ready-to-use JSON-LD code blocks for missing schemas. Customize templates based on the detected business type and content.
 
-**Always generate templates for these if missing:**
+**IMPORTANT: Verify before recommending. Do not recommend platforms or URLs that don't actually exist.**
 
-1. **Organization** (with comprehensive `sameAs`)
-2. **Person** (for identified authors)
+#### 7a. sameAs Platform Verification (REQUIRED before generating Organization template)
+
+Before recommending any platform in sameAs, verify it has a real presence by fetching its expected URL via curl. Only include platforms with confirmed, active listings:
+
+```bash
+# Check each candidate platform — only include if HTTP 200 and real content found
+curl -s -o /dev/null -w "%{http_code}" "https://www.yelp.com/biz/[business-slug]"
+curl -s -o /dev/null -w "%{http_code}" "https://www.linkedin.com/company/[company-slug]"
+curl -s -o /dev/null -w "%{http_code}" "https://www.youtube.com/@[handle]"
+```
+
+**Rules:**
+- If a platform returns 404 or has no real content (e.g., Yelp page with 0-1 reviews, LinkedIn company page that doesn't exist), **do not include it in sameAs recommendations**.
+- For YouTube: a channel with fresh content or meaningful views is worth including even without a large subscriber count. A stub channel with no videos is not.
+- For Google Business Profile: look for a `maps.app.goo.gl` or `g.page` short link, or ask client to provide their Google CID from GBP dashboard.
+- Always note which platforms you verified and what you found.
+
+#### 7b. Wikidata Recommendation (REQUIRED for businesses 10+ years old)
+
+If the business has been operating for 10 or more years and lacks a Wikidata entry, **always recommend creating one**. Wikidata is more permissive than Wikipedia — it does not require full notability, only a clearly identifiable entity with at least 1-2 verifiable external references (official website, GBP listing, Yelp, press mention, company registry).
+
+A Wikidata Q-number in sameAs is equivalent to Wikipedia for the scoring rubric's 5+ platform tier, and is the single most impactful schema addition for AI entity disambiguation (ChatGPT and Gemini use Wikidata as a structured entity anchor).
+
+Include a "Minimum Viable Wikidata Profile" section in the recommendations for eligible businesses:
+
+```
+Minimum fields for a defensible Wikidata entry:
+- instance of: clothing store (Q57485) / organization
+- official name
+- official website (P856)
+- founding date (P571)
+- headquarters location (P159)
+- country (P17)
+- industry (P452)
+- 1-2 external reference URLs (GBP, Yelp, any press mention)
+```
+
+Do NOT recommend Wikidata for businesses with zero external footprint — they will likely be deleted.
+
+#### 7c. Person Schema Verification (REQUIRED before generating Person template)
+
+Before generating a Person schema with a specific `@id` URL, verify the person actually has a discoverable profile:
+
+**Scan in this order (stop when found):**
+1. **The About page** — fetch `/about`, `/pages/about`, `/team`, etc. via curl. Check for named sections with `id` anchors (e.g., `<section id="ted-vasilas">`). If no anchor exists, do NOT use that URL as `@id`.
+2. **LinkedIn** — search for the person by name + company. If a profile exists, use it as `sameAs`.
+3. **The website itself** — check for a dedicated staff/bio page (e.g., `/pages/about-ted`, `/team/chris-vasilas`).
+4. **Third-party press articles** — a profile article in a credible publication (local paper, trade press, ethnic/community press) can be used in `subjectOf` on the Person or Organization schema.
+
+**If no linkable profile exists:**
+- Do NOT fabricate an `@id` URL.
+- Instead, generate the Person template with a placeholder `@id` and include a note explaining: "This URL must exist before the schema is implemented. Options: (a) add a named anchor to the About page, (b) create a dedicated bio page, (c) link to a LinkedIn profile."
+
+**Third-party articles about the person:**
+- Use the `subjectOf` property on Organization or Person to reference press articles. This is not `sameAs` (which means "same entity at another URL") but correctly signals the article is about this entity.
+- Example: A profile article in The National Herald about the founder can be added as:
+  ```json
+  "subjectOf": {
+    "@type": "NewsArticle",
+    "headline": "[Article title]",
+    "url": "[Article URL]",
+    "publisher": {"@type": "Organization", "name": "[Publication name]"}
+  }
+  ```
+- Also recommend: link to the article from the About page as an explicit citation ("As featured in [Publication]"). This creates a bidirectional reference that AI crawlers recognize as third-party validation.
+
+**Always generate templates for these if missing (post-verification):**
+
+1. **Organization** (with verified `sameAs` platforms only)
+2. **Person** (only if a linkable profile is found or with explicit placeholder warning)
 3. **Article/BlogPosting** (for content pages)
 4. **BreadcrumbList** (for navigation context)
 5. **WebSite + SearchAction** (for the homepage)
-6. **speakable** (added to Article schema)
 
 Templates must:
 - Use JSON-LD format exclusively.
@@ -370,7 +437,10 @@ Compute the **Schema Score (0-100)**. Weight criteria by their actual impact on 
 
 - JSON-LD is the strongly preferred format. If the site uses Microdata, recommend migrating to JSON-LD.
 - The `sameAs` property is the most impactful single addition for GEO. It directly enables AI models to build entity graphs and verify identity across platforms.
-- `speakable` is an underused property that directly signals AI assistant readiness. Recommend it for all content-heavy pages.
+- **Only recommend sameAs platforms you have verified exist and have real content.** A Yelp page with 1 review or a LinkedIn that returns 404 provides no entity signal and wastes implementation effort. Verify every URL before recommending it.
+- **Wikidata is the right first step for entity establishment**, not Wikipedia. For businesses 10+ years old, always recommend creating a Wikidata entry — it's more permissive than Wikipedia and a Wikidata Q-number in sameAs unlocks the 5+ platform tier for AI entity disambiguation. It does not require Wikipedia-level notability, only verifiable facts and 1-2 external references.
+- **Do not fabricate `@id` URLs for Person schema.** If no linkable profile (LinkedIn, dedicated bio page, named anchor on About page) exists, explain what needs to be built rather than generating a broken reference. A Person schema pointing to a 404 is worse than no Person schema.
+- Use `subjectOf` (not `sameAs`) to reference press articles about the entity. Also recommend linking to those articles from the About page — bidirectional references are a strong E-E-A-T signal for AI crawlers.
 - When generating JSON-LD templates, ensure they are syntactically valid. Test mentally: could this JSON be parsed without errors?
 - FAQPage schema is NOT harmful on non-authority sites — it simply will not generate rich results. It may still provide semantic value for AI models. Recommend keeping it if already implemented, but do not prioritize adding it.
 - HowTo schema provides zero search benefit since September 2023. Recommend removal to reduce page complexity.
