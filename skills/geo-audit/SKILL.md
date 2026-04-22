@@ -24,18 +24,49 @@ Traditional SEO optimizes for search engine rankings. GEO optimizes for AI citat
 
 ## Audit Workflow
 
-### Phase 1: Discovery and Reconnaissance
+### Phase 0: Evidence Collection (REQUIRED BEFORE SUBAGENTS)
 
-**Step 0: Create Output Directory (REQUIRED FIRST)**
+**This step MUST run before any subagent is launched.** It collects verified, curl-based facts about the site and produces a ground-truth evidence block that is injected into every subagent prompt.
 
-Before any other work, create the domain-specific output folder:
+**Step 0a: Create Output Directory**
 
 ```bash
 # Extract domain from URL (e.g., https://example.com/page → example.com)
-mkdir -p ~/.geo-prospects/audits/{domain}
+DOMAIN="example.com"
+mkdir -p ~/.geo-prospects/audits/$DOMAIN
 ```
 
-All subsequent files (subagent reports, final reports, JSON data) MUST be saved to this folder.
+**Step 0b: Run the Evidence Collector**
+
+```bash
+cd /Users/nathan/gitRepos/geo-seo-claude
+python3 scripts/collect_evidence.py https://{domain} \
+  --output ~/.geo-prospects/audits/{domain}/evidence.json \
+  --markdown > ~/.geo-prospects/audits/{domain}/evidence.md
+```
+
+This script fetches key pages via curl (homepage, about, FAQ, sample PDP, collection, blog post) and produces:
+- `evidence.json` — structured facts for programmatic use
+- `evidence.md` — a markdown block for injection into subagent prompts
+
+**Step 0c: Read the Evidence**
+
+Read `~/.geo-prospects/audits/{domain}/evidence.md` and note these verified facts before proceeding:
+- Which pages returned 200 vs 404
+- Body text word counts per page (ground truth on SSR)
+- JSON-LD schema types found per page (ground truth on schema presence)
+- robots.txt AI crawler status
+- Sitemap URL(s)
+
+**Step 0d: Inject Evidence into Every Subagent Prompt**
+
+When spawning each subagent in Phase 2, prepend the full contents of `evidence.md` to the prompt with this preamble:
+
+> The following evidence was collected via direct curl before your analysis begins. **This is ground truth. Do NOT contradict these findings based on WebFetch results.** If WebFetch returns less content than curl found, trust curl. If curl found a schema type on a page, that schema IS server-rendered and visible to AI crawlers — do not score it as absent.
+
+---
+
+### Phase 1: Discovery and Reconnaissance
 
 **Step 1: Fetch Homepage and Detect Business Type**
 
@@ -97,8 +128,12 @@ For each page in the crawl set, record:
 
 Delegate analysis to 5 specialized subagents. Each subagent operates on the collected page data and produces a category score (0-100) plus findings.
 
-**IMPORTANT:** When spawning each subagent, include the output path in the prompt:
-> Save your report to `~/.geo-prospects/audits/{domain}/{report-name}.md`
+**REQUIRED for every subagent prompt:**
+1. Paste the full contents of `evidence.md` at the top of each subagent prompt
+2. Include the output path: `Save your report to ~/.geo-prospects/audits/{domain}/{report-name}.md`
+3. Include the target URL
+
+The evidence block tells each subagent what is actually on the site — they score from verified facts, not from re-fetching.
 
 **Subagent 1: AI Citability Analysis (geo-citability)**
 - Analyze content blocks for quotability by AI systems
