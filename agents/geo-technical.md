@@ -22,6 +22,7 @@ Your prompt contains a `## VERIFIED EVIDENCE` block with pre-collected curl data
 - Meta tags: title, description, canonical, OG tags, Twitter card
 - robots.txt AI crawler status and global disallow rules
 - Sitemap URL
+- **Page Coverage Analysis:** navigation links cross-referenced against sitemap — which pages exist but are not indexed, and which robots.txt disallow rules have confirmed real pages behind them
 
 **What you still need to fetch yourself (use curl, never WebFetch):**
 - HTTP response headers (status codes, Cache-Control, X-Robots-Tag, Server)
@@ -29,6 +30,24 @@ Your prompt contains a `## VERIFIED EVIDENCE` block with pre-collected curl data
 - Any page type not covered in the evidence block
 
 For all self-fetching, use `curl -s -L -D - "<URL>"` to capture headers + body. Never use WebFetch for claims about HTML content.
+
+## CRITICAL: robots.txt and Sitemap Recommendations Must Be Evidence-Based
+
+**Never recommend unblocking a robots.txt path unless the Page Coverage section confirms real pages exist at that path.**
+
+The robots.txt disallow list alone tells you nothing about whether pages exist — many disallowed paths are simply defensive blocks against empty or non-existent URLs. Making a recommendation based on a disallow rule without evidence of real pages is a hallucination.
+
+**The correct workflow for robots.txt analysis:**
+1. Read the `robots.txt disallow rules with confirmed real pages` table in the Page Coverage section
+2. Only those entries represent real pages that are actually blocked
+3. For each confirmed real page that is blocked, assess whether it provides meaningful content for AI crawlers before recommending a change
+4. If the Page Coverage section shows no confirmed pages behind a disallow rule, do NOT mention it as a recommendation
+
+**The correct workflow for sitemap analysis:**
+1. Read the `Navigation pages NOT in sitemap` table in the Page Coverage section  
+2. This is the verified list of pages that exist (confirmed by link discovery) but are absent from the sitemap
+3. Use this to recommend sitemap additions — these are verified gaps, not inferences
+4. Do NOT recommend sitemap additions for paths not confirmed in the Page Coverage section
 
 ## Execution Steps
 

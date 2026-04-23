@@ -7,6 +7,7 @@ Fetches key pages via curl and extracts everything agents need to score:
 - Body text word counts (SSR verification)
 - Meta tags (title, description, canonical, OG tags)
 - robots.txt AI crawler directives
+- Page coverage: nav/footer links cross-referenced against sitemap
 
 Agents receive this pre-collected data and score from it directly.
 They should NEVER use WebFetch or curl for anything covered here.
@@ -183,7 +184,155 @@ def parse_robots(body):
     return {
         "sitemaps": list(dict.fromkeys(sitemaps)),  # deduplicate
         "crawler_status": crawler_status,
-        "global_disallows": global_disallows[:15],
+        "global_disallows": global_disallows[:20],
+    }
+
+
+def extract_nav_links(html, base_url):
+    """
+    Extract unique internal page paths from homepage HTML (nav + footer).
+    Returns sorted list of path strings like '/pages/about', '/policies/privacy-policy'.
+    Filters to non-product/collection paths — these are the pages most likely to be
+    meaningful trust/info pages worth checking against the sitemap.
+    """
+    parsed = urlparse(base_url)
+    domain = parsed.netloc
+
+    hrefs = re.findall(r'href=["\']([^"\'#\s]+)["\']', html, re.IGNORECASE)
+
+    paths = set()
+    for href in hrefs:
+        href = href.strip()
+        if not href or href.startswith(('javascript:', 'mailto:', 'tel:', 'data:')):
+            continue
+        if href.startswith('http'):
+            if domain not in href:
+                continue
+            path = urlparse(href).path
+        elif href.startswith('/') and not href.startswith('//'):
+            path = href.split('?')[0].split('#')[0]
+        else:
+            continue
+
+        path = path.rstrip('/')
+        if not path or path == '':
+            continue
+
+        # Skip high-volume dynamic paths — these are expected to be sitemapped separately
+        skip_prefixes = ('/products/', '/collections/', '/cdn/', '/assets/', '/cart',
+                         '/checkout', '/account', '/search', '/admin')
+        if any(path.startswith(p) for p in skip_prefixes):
+            continue
+
+        paths.add(path)
+
+    return sorted(paths)
+
+
+def collect_sitemap_data(sitemap_urls, timeout=15):
+    """
+    Fetch all child sitemaps and collect every URL they contain.
+    Returns (all_urls, child_sitemap_info) where:
+      all_urls: set of full URL strings across all child sitemaps
+      child_sitemap_info: list of {url, count, type} per child sitemap
+    """
+    all_urls = set()
+    child_info = []
+
+    for sitemap_url in sitemap_urls:
+        sitemap_url = sitemap_url.strip()
+        status, _, body = curl_fetch(sitemap_url, timeout=timeout)
+        if status != 200 or not body:
+            continue
+
+        # Check if this is a sitemap index
+        if '<sitemapindex' in body:
+            child_sitemaps = re.findall(r'<loc>(https?://[^<]+)</loc>', body)
+            for child in child_sitemaps:
+                child = child.strip()
+                _, _, child_body = curl_fetch(child, timeout=timeout)
+                if not child_body:
+                    continue
+                urls = [u.strip() for u in re.findall(r'<loc>(https?://[^<]+)</loc>', child_body)]
+                all_urls.update(urls)
+                child_info.append({"url": child, "count": len(urls)})
+        else:
+            # Direct sitemap
+            urls = [u.strip() for u in re.findall(r'<loc>(https?://[^<]+)</loc>', body)]
+            all_urls.update(urls)
+            child_info.append({"url": sitemap_url, "count": len(urls)})
+
+    return all_urls, child_info
+
+
+def analyze_page_coverage(nav_paths, sitemap_urls, robots_global_disallows, base_url):
+    """
+    Cross-reference navigation links against sitemap URLs and robots.txt disallows.
+
+    Identifies:
+    - Nav pages not found in the sitemap (potential indexing gaps)
+    - Which robots.txt disallow rules apply to real, confirmed pages
+
+    This is the ground truth that prevents agents from making recommendations
+    based on robots.txt rules alone without knowing whether real pages exist.
+    """
+    parsed = urlparse(base_url)
+    base = f"{parsed.scheme}://{parsed.netloc}"
+
+    # Normalize sitemap URLs to paths for comparison
+    sitemap_paths = set()
+    for u in sitemap_urls:
+        try:
+            path = urlparse(u).path.rstrip('/')
+            if path:
+                sitemap_paths.add(path)
+        except Exception:
+            pass
+
+    # For each nav path: is it in the sitemap? is it blocked by robots.txt?
+    nav_analysis = []
+    for path in nav_paths:
+        in_sitemap = path in sitemap_paths
+
+        # Check if any global disallow rule covers this path
+        blocked_by = None
+        for rule in robots_global_disallows:
+            if not rule:
+                continue
+            # Strip wildcard suffix for prefix matching
+            prefix = rule.rstrip('*')
+            if prefix and (path == prefix.rstrip('/') or path.startswith(prefix.rstrip('/') + '/')):
+                blocked_by = rule
+                break
+
+        nav_analysis.append({
+            "path": path,
+            "full_url": base + path,
+            "in_sitemap": in_sitemap,
+            "robots_blocked_by": blocked_by,
+        })
+
+    # Disallow rules that have confirmed real pages behind them
+    disallow_with_real_pages = []
+    for rule in robots_global_disallows:
+        if not rule:
+            continue
+        prefix = rule.rstrip('*').rstrip('/')
+        if not prefix:
+            continue
+        matching = [p for p in nav_paths if p == prefix or p.startswith(prefix + '/')]
+        if matching:
+            disallow_with_real_pages.append({
+                "rule": rule,
+                "confirmed_pages": matching[:5],
+                "any_in_sitemap": any(p in sitemap_paths for p in matching),
+            })
+
+    return {
+        "sitemap_url_count": len(sitemap_urls),
+        "nav_paths_found": len(nav_paths),
+        "nav_analysis": nav_analysis,
+        "disallow_rules_with_real_pages": disallow_with_real_pages,
     }
 
 
@@ -206,14 +355,17 @@ def collect_page_evidence(url, label):
         "body_text_words": word_count,
         "ssr_assessment": assess_ssr(text_chars, body),
         "schema_types": schema_types,
-        "schema_blocks": jsonld_blocks,          # full JSON-LD content
+        "schema_blocks": jsonld_blocks,
         "meta_tags": extract_meta_tags(body),
         "headings": extract_headings(body),
     }
 
 
 def discover_key_pages(base_url, robots_body):
-    """Discover key page URLs covering all page types agents will score."""
+    """
+    Discover key page URLs covering all page types agents will score.
+    Returns (key_pages, all_sitemap_urls) so sitemap data is not fetched twice.
+    """
     base = base_url.rstrip('/')
 
     # Start with common paths
@@ -225,12 +377,12 @@ def discover_key_pages(base_url, robots_body):
         {"url": base + "/faq", "label": "FAQ"},
     ]
 
-    # Pull one sample of each content type from sitemaps
-    sitemap_urls = [s.strip() for s in re.findall(r'(?i)^Sitemap:\s*(.+)$', robots_body, re.MULTILINE)]
-    # Deduplicate sitemap URLs
-    sitemap_urls = list(dict.fromkeys(sitemap_urls))
+    sitemap_urls_declared = [s.strip() for s in re.findall(r'(?i)^Sitemap:\s*(.+)$', robots_body, re.MULTILINE)]
+    sitemap_urls_declared = list(dict.fromkeys(sitemap_urls_declared))
 
-    for sitemap_url in sitemap_urls[:1]:
+    all_sitemap_urls = set()
+
+    for sitemap_url in sitemap_urls_declared[:1]:
         status, _, sitemap_body = curl_fetch(sitemap_url, timeout=15)
         if status != 200:
             continue
@@ -240,9 +392,10 @@ def discover_key_pages(base_url, robots_body):
             _, _, child_body = curl_fetch(child, timeout=15)
             if not child_body:
                 continue
-            # All <loc> URLs from child sitemap — filter out root
+
             urls = [u.strip() for u in re.findall(r'<loc>(https?://[^<]+)</loc>', child_body)
                     if u.strip().rstrip('/') != base]
+            all_sitemap_urls.update(urls)
 
             if not urls:
                 continue
@@ -252,8 +405,7 @@ def discover_key_pages(base_url, robots_body):
             elif 'collection' in child.lower():
                 candidates.append({"url": urls[0], "label": "Collection (sample)"})
             elif 'blog' in child.lower() or 'article' in child.lower():
-                # urls[0] from a blog sitemap is an individual post, not the index
-                # Filter out bare /blogs/xxx index URLs (no second path segment)
+                # Filter for individual post URLs (5+ path segments), not index pages
                 post_urls = [u for u in urls if u.count('/') >= 5]
                 if post_urls:
                     candidates.append({"url": post_urls[0], "label": "Blog post (sample)"})
@@ -271,7 +423,7 @@ def discover_key_pages(base_url, robots_body):
             seen_urls.add(p["url"])
             unique.append(p)
 
-    return unique
+    return unique, all_sitemap_urls
 
 
 def render_markdown(evidence):
@@ -283,6 +435,10 @@ def render_markdown(evidence):
     lines.append("> curl to re-derive anything already listed here. If a schema type appears")
     lines.append("> in the JSON-LD blocks below, it IS present and server-rendered — score it")
     lines.append("> as present. If it does not appear, score it as absent.")
+    lines.append("> ")
+    lines.append("> For robots.txt recommendations: only recommend changes for paths where")
+    lines.append("> the Page Coverage section below confirms real pages exist at those paths.")
+    lines.append("> Do not infer page existence from robots.txt disallow rules alone.")
     lines.append("")
 
     # SSR summary table
@@ -357,6 +513,42 @@ def render_markdown(evidence):
         lines.append(f"**Global Disallow (User-agent: \\*):** `{disallows_str}`")
     lines.append("")
 
+    # Page coverage analysis
+    coverage = evidence.get("page_coverage", {})
+    if coverage:
+        lines.append("### Page Coverage Analysis")
+        lines.append("")
+        lines.append(f"**Sitemap URLs found:** {coverage.get('sitemap_url_count', 0)}")
+        lines.append(f"**Navigation paths discovered:** {coverage.get('nav_paths_found', 0)}")
+        lines.append("")
+
+        nav_analysis = coverage.get("nav_analysis", [])
+        not_in_sitemap = [p for p in nav_analysis if not p["in_sitemap"]]
+        if not_in_sitemap:
+            lines.append("**Navigation pages NOT in sitemap** (confirmed to exist via link discovery):")
+            lines.append("")
+            lines.append("| Path | In Sitemap | robots.txt |")
+            lines.append("|---|---|---|")
+            for item in not_in_sitemap[:25]:
+                blocked = f"Blocked by `{item['robots_blocked_by']}`" if item["robots_blocked_by"] else "Allowed"
+                lines.append(f"| `{item['path']}` | No | {blocked} |")
+            lines.append("")
+
+        disallow_real = coverage.get("disallow_rules_with_real_pages", [])
+        if disallow_real:
+            lines.append("**robots.txt disallow rules with confirmed real pages:**")
+            lines.append("")
+            lines.append("| Rule | Confirmed Pages | Any in Sitemap? |")
+            lines.append("|---|---|---|")
+            for item in disallow_real:
+                pages = ", ".join(f"`{p}`" for p in item["confirmed_pages"])
+                in_sm = "Yes" if item["any_in_sitemap"] else "No"
+                lines.append(f"| `{item['rule']}` | {pages} | {in_sm} |")
+            lines.append("")
+        else:
+            lines.append("**robots.txt disallow rules:** No confirmed real pages found behind any disallow rule (pages may exist but were not linked from the homepage).")
+            lines.append("")
+
     return "\n".join(lines)
 
 
@@ -380,28 +572,45 @@ def main():
     robots_evidence = parse_robots(robots_body if robots_status == 200 else "")
     robots_evidence["status"] = robots_status
 
-    # Discover key pages
+    # Discover key pages (also collects all sitemap URLs as a side effect)
     print(f"  Discovering pages from sitemap...", file=sys.stderr)
-    key_pages = discover_key_pages(url, robots_body if robots_status == 200 else "")
+    key_pages, all_sitemap_urls = discover_key_pages(url, robots_body if robots_status == 200 else "")
 
-    # Fetch each page
+    # Fetch each page, keeping the homepage HTML for nav link extraction
     page_evidence = []
+    homepage_html = None
     for page in key_pages:
         print(f"  {page['label']}: {page['url']}...", file=sys.stderr)
         ev = collect_page_evidence(page["url"], page["label"])
         if ev.get("status") == 200:
+            if page["label"] == "Homepage" and homepage_html is None:
+                # Re-fetch homepage to get raw HTML for nav analysis
+                # (collect_page_evidence doesn't store raw HTML to keep evidence lean)
+                _, _, homepage_html = curl_fetch(page["url"])
             page_evidence.append(ev)
         else:
-            # Only include failed fetches for non-fallback candidates
             if not any(p["url"] == page["url"] and p.get("status") == 200
                        for p in page_evidence):
                 page_evidence.append(ev)
+
+    # Page coverage: nav links vs sitemap
+    page_coverage = None
+    if homepage_html:
+        print(f"  Analyzing page coverage (nav vs sitemap)...", file=sys.stderr)
+        nav_paths = extract_nav_links(homepage_html, url)
+        page_coverage = analyze_page_coverage(
+            nav_paths,
+            all_sitemap_urls,
+            robots_evidence.get("global_disallows", []),
+            url,
+        )
 
     evidence = {
         "domain": domain,
         "target_url": url,
         "robots": robots_evidence,
         "pages": page_evidence,
+        "page_coverage": page_coverage,
     }
 
     if args.output:
