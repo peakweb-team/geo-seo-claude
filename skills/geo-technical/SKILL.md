@@ -273,8 +273,10 @@ When real user data is unavailable, estimate from page characteristics:
 
 ## Category 7: Server-Side Rendering (15 points) — CRITICAL FOR GEO
 
-### Why SSR Is Mandatory for AI Visibility
-AI crawlers (GPTBot, PerplexityBot, ClaudeBot, etc.) do **NOT execute JavaScript**. They fetch the raw HTML and parse it. If your content is rendered client-side by React, Vue, Angular, or any other JavaScript framework, AI crawlers see an empty page.
+### Why SSR Matters for AI Visibility
+AI crawlers (GPTBot, PerplexityBot, ClaudeBot, etc.) generally do **not execute JavaScript**. They fetch the raw HTML and parse it. Content that exists only in JS-rendered DOM is not available to these crawlers.
+
+**However, "JS-heavy" does not mean "invisible."** Many platforms (Shopify, WordPress, Wix) server-render core content (product names, prices, headings, meta tags) while using JS for interactive features, image carousels, and supplementary content. Always verify what IS and ISN'T in the raw HTML before making claims — never assume a JS-dependent site means crawlers see nothing.
 
 Even Googlebot, which does execute JavaScript, deprioritizes JS-rendered content due to the additional crawl budget required. Google processes JS rendering in a separate "rendering queue" that can delay indexing by days or weeks.
 

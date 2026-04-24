@@ -88,7 +88,7 @@ ACTION_CATALOG = {
         "controlLevel": "direct",
         "difficultyLevel": "low",
         "estimatedScoreImpact": "low",
-        "timeHorizon": "short_term",
+        "timeHorizon": "near_term",
         "peakwebFit": "direct_service",
         "isFoundational": False,
         "affectedPlatforms": ["Claude", "some Perplexity configurations"],
@@ -227,8 +227,8 @@ ACTION_CATALOG = {
         "title": "Add WebSite + SearchAction Schema",
         "category": "schema",
         "scoreComponent": "schema",
-        "description": "Add a WebSite schema block with a SearchAction to enable sitelinks search box in Google and help AI systems understand site navigation.",
-        "whyItMatters": "WebSite schema helps AI systems and search engines understand your site's scope and enables sitelinks features that increase trust signals.",
+        "description": "Add a WebSite schema block with a SearchAction to enable sitelinks search box in Google.",
+        "whyItMatters": "WebSite schema is primarily a Google Search feature (sitelinks search box). It has minimal direct impact on AI citation decisions but is a low-effort addition.",
         "controlLevel": "direct",
         "difficultyLevel": "low",
         "estimatedScoreImpact": "low",
@@ -246,7 +246,7 @@ ACTION_CATALOG = {
         "category": "technical",
         "scoreComponent": "technical",
         "description": "Ensure all primary content — headlines, body copy, key facts, navigation — is present in the server-rendered HTML response, not dependent on JavaScript execution.",
-        "whyItMatters": "AI crawlers do not execute JavaScript. Any content that only appears after JS runs is invisible to them. This affects every AI platform simultaneously and is the most impactful technical fix possible.",
+        "whyItMatters": "AI crawlers generally do not execute JavaScript. Content that exists only in JS-rendered DOM — such as product descriptions, editorial text, or entire page sections — is not available to them. The severity depends on what specifically is missing from the server-rendered HTML; always verify before assuming all content is invisible.",
         "controlLevel": "direct",
         "difficultyLevel": "high",
         "estimatedScoreImpact": "very_high",
@@ -254,7 +254,7 @@ ACTION_CATALOG = {
         "peakwebFit": "direct_service",
         "isFoundational": True,
         "affectedPlatforms": ["ChatGPT", "Perplexity", "Claude", "Gemini", "Google AI Overviews", "Bing Copilot"],
-        "implementationNotes": "Options by stack: Next.js → ensure pages use SSR or SSG (not client-only). React SPA → add SSR via Next.js migration or Astro. Vue → Nuxt.js. Angular → Angular Universal. Headless CMS → verify the rendering layer outputs HTML. Check by viewing source (Cmd+U) — if content is absent, it's JS-rendered.",
+        "implementationNotes": "Options by stack: Next.js → ensure pages use SSR or SSG (not client-only). React SPA → add SSR via Next.js migration or Astro. Vue → Nuxt.js. Angular → Angular Universal. Headless CMS → verify the rendering layer outputs HTML. Verify by running `curl -s <URL>` and checking what content is present in the raw HTML — note specifically what IS and ISN'T server-rendered.",
         "dependencies": [],
         "status": "not_started",
     },
@@ -462,10 +462,10 @@ ACTION_CATALOG = {
         "category": "technical",
         "scoreComponent": "technical",
         "description": "Bring LCP under 2.5s, INP under 200ms, and CLS under 0.1 as measured by Google PageSpeed Insights.",
-        "whyItMatters": "Core Web Vitals affect crawl budget and serve as a general trust signal. Slow, unstable pages get de-prioritised by crawlers and reduce the perceived quality of the site overall.",
+        "whyItMatters": "Core Web Vitals primarily affect Google crawl budget allocation. They do not directly influence whether AI systems cite your content, but very slow pages may be deprioritised in crawl queues.",
         "controlLevel": "direct",
         "difficultyLevel": "medium",
-        "estimatedScoreImpact": "medium",
+        "estimatedScoreImpact": "low",
         "timeHorizon": "near_term",
         "peakwebFit": "direct_service",
         "isFoundational": False,
@@ -1228,8 +1228,13 @@ def generate_roadmap_markdown(action_items: list, findings: dict) -> str:
     partner_items = [a for a in action_items if a.get("peakwebFit") != "direct_service"]
 
     lines = []
+    answer_share_score = findings.get("answer_share_score")
+    answer_share_rating = findings.get("answer_share_rating")
+
     lines.append(f"# AI Visibility Roadmap — {brand}")
-    lines.append(f"> Generated {today} | GEO Score: {geo_score}/100 ({score_label})")
+    lines.append(f"> Generated {today} | GEO Readiness Score: {geo_score}/100 ({score_label})")
+    if answer_share_score is not None:
+        lines.append(f"> AI Answer Share Score: {answer_share_score}/100 ({answer_share_rating})")
     if url:
         lines.append(f"> Site: {url}")
     if bt != "unknown":
@@ -1389,7 +1394,7 @@ def generate_roadmap_markdown(action_items: list, findings: dict) -> str:
 
     lines.append("---")
     lines.append("")
-    lines.append("## Appendix: GEO Score Components Referenced")
+    lines.append("## Appendix: GEO Readiness Score Breakdown")
     lines.append("")
     lines.append("| Component | Weight | Your Score | Benchmark |")
     lines.append("|-----------|--------|------------|-----------|")
@@ -1410,6 +1415,29 @@ def generate_roadmap_markdown(action_items: list, findings: dict) -> str:
     lines.append("")
     lines.append("_Scores derived from GEO-AUDIT-REPORT.md. Run `/geo-peakweb audit` to refresh._")
     lines.append("")
+
+    # AI Answer Share appendix (if data available)
+    if answer_share_score is not None:
+        lines.append("---")
+        lines.append("")
+        lines.append("## Appendix: AI Answer Share Score")
+        lines.append("")
+        lines.append(f"**AI Answer Share Score: {answer_share_score}/100 ({answer_share_rating})**")
+        lines.append("")
+        lines.append("This score measures how much of AI-generated answers is attributable to")
+        lines.append(f"{brand} across a basket of test queries run against Perplexity Sonar.")
+        lines.append("Citations appearing earlier in answers are weighted more heavily (position-adjusted impression).")
+        lines.append("")
+        lines.append("_Run `/geo-perplexity` to measure or update this score._")
+        lines.append("")
+    else:
+        lines.append("---")
+        lines.append("")
+        lines.append("## Appendix: AI Answer Share Score")
+        lines.append("")
+        lines.append("**Not yet measured.** Run `/geo-perplexity` to test how much of AI answers")
+        lines.append(f"references {brand} across a basket of real queries.")
+        lines.append("")
 
     return "\n".join(lines)
 
@@ -1463,6 +1491,9 @@ def main():
         "brand_name": findings.get("brand_name", ""),
         "url": findings.get("url", ""),
         "geo_score": findings.get("geo_score", 0),
+        "geo_readiness_score": findings.get("geo_score", 0),  # alias for new terminology
+        "ai_answer_share_score": findings.get("answer_share_score"),
+        "ai_answer_share_rating": findings.get("answer_share_rating"),
         "business_type": findings.get("business_type", "unknown"),
         "platform": findings.get("platform", "unknown"),
         "category_scores": findings.get("category_scores", {}),

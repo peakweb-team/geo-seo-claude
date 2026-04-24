@@ -24,18 +24,49 @@ Traditional SEO optimizes for search engine rankings. GEO optimizes for AI citat
 
 ## Audit Workflow
 
-### Phase 1: Discovery and Reconnaissance
+### Phase 0: Evidence Collection (REQUIRED BEFORE SUBAGENTS)
 
-**Step 0: Create Output Directory (REQUIRED FIRST)**
+**This step MUST run before any subagent is launched.** It collects verified, curl-based facts about the site and produces a ground-truth evidence block that is injected into every subagent prompt.
 
-Before any other work, create the domain-specific output folder:
+**Step 0a: Create Output Directory**
 
 ```bash
 # Extract domain from URL (e.g., https://example.com/page → example.com)
-mkdir -p ~/.geo-prospects/audits/{domain}
+DOMAIN="example.com"
+mkdir -p ~/.geo-prospects/audits/$DOMAIN
 ```
 
-All subsequent files (subagent reports, final reports, JSON data) MUST be saved to this folder.
+**Step 0b: Run the Evidence Collector**
+
+```bash
+cd /Users/nathan/gitRepos/geo-seo-claude
+python3 scripts/collect_evidence.py https://{domain} \
+  --output ~/.geo-prospects/audits/{domain}/evidence.json \
+  --markdown > ~/.geo-prospects/audits/{domain}/evidence.md
+```
+
+This script fetches key pages via curl (homepage, about, FAQ, sample PDP, collection, blog post) and produces:
+- `evidence.json` — structured facts for programmatic use
+- `evidence.md` — a markdown block for injection into subagent prompts
+
+**Step 0c: Read the Evidence**
+
+Read `~/.geo-prospects/audits/{domain}/evidence.md` and note these verified facts before proceeding:
+- Which pages returned 200 vs 404
+- Body text word counts per page (ground truth on SSR)
+- JSON-LD schema types found per page (ground truth on schema presence)
+- robots.txt AI crawler status
+- Sitemap URL(s)
+
+**Step 0d: Inject Evidence into Every Subagent Prompt**
+
+When spawning each subagent in Phase 2, prepend the full contents of `evidence.md` to the prompt with this preamble:
+
+> The following evidence was collected via direct curl before your analysis begins. **This is ground truth. Do NOT contradict these findings based on WebFetch results.** If WebFetch returns less content than curl found, trust curl. If curl found a schema type on a page, that schema IS server-rendered and visible to AI crawlers — do not score it as absent.
+
+---
+
+### Phase 1: Discovery and Reconnaissance
 
 **Step 1: Fetch Homepage and Detect Business Type**
 
@@ -97,8 +128,12 @@ For each page in the crawl set, record:
 
 Delegate analysis to 5 specialized subagents. Each subagent operates on the collected page data and produces a category score (0-100) plus findings.
 
-**IMPORTANT:** When spawning each subagent, include the output path in the prompt:
-> Save your report to `~/.geo-prospects/audits/{domain}/{report-name}.md`
+**REQUIRED for every subagent prompt:**
+1. Paste the full contents of `evidence.md` at the top of each subagent prompt
+2. Include the output path: `Save your report to ~/.geo-prospects/audits/{domain}/{report-name}.md`
+3. Include the target URL
+
+The evidence block tells each subagent what is actually on the site — they score from verified facts, not from re-fetching.
 
 **Subagent 1: AI Citability Analysis (geo-citability)**
 - Analyze content blocks for quotability by AI systems
@@ -155,9 +190,15 @@ mv *${DOMAIN_SLUG}*.md *${DOMAIN_SLUG}*.json "$DOMAIN/" 2>/dev/null
 
 ### Phase 3: Score Aggregation and Report Generation
 
-#### Composite GEO Score Calculation
+#### Two Topline Scores
 
-The overall GEO Score (0-100) is a weighted average of six category scores:
+The audit produces **two separate scores**, each 0-100. Do **not** combine them into a single master score.
+
+##### Score 1 — GEO Readiness Score
+
+**"How prepared is the site to be cited by AI systems?"**
+
+A site-level readiness score derived from six weighted audit categories:
 
 | Category | Weight | What It Measures |
 |---|---|---|
@@ -170,10 +211,10 @@ The overall GEO Score (0-100) is a weighted average of six category scores:
 
 **Formula:**
 ```
-GEO_Score = (Citability * 0.25) + (Brand * 0.20) + (EEAT * 0.20) + (Technical * 0.15) + (Schema * 0.10) + (Platform * 0.10)
+GEO_Readiness = (Citability × 0.25) + (Brand × 0.20) + (EEAT × 0.20) + (Technical × 0.15) + (Schema × 0.10) + (Platform × 0.10)
 ```
 
-#### Score Interpretation
+**Interpretation:**
 
 | Score Range | Rating | Interpretation |
 |---|---|---|
@@ -183,43 +224,82 @@ GEO_Score = (Citability * 0.25) + (Brand * 0.20) + (EEAT * 0.20) + (Technical * 
 | 40-59 | Poor | Weak GEO signals; AI systems may struggle to cite or recommend |
 | 0-39 | Critical | Minimal GEO optimization; site is largely invisible to AI systems |
 
+Use `scripts/geo_readiness.py` for deterministic calculation.
+
+##### Score 2 — AI Answer Share Score
+
+**"How much of AI's answers does this business actually own?"**
+
+A prompt-basket performance score computed from Perplexity Sonar query results. This measures how much of the generated answer is attributable to the client domain, not just whether the domain is cited at all.
+
+**Key concept — Position-Adjusted Impression:**
+Citations appearing earlier in an AI answer carry more weight. A citation in the first sentence is worth more than one buried at the end. For each citation marker in the answer, the position weight is `1 / rank` where rank is the marker's position in the sequence.
+
+**Method:**
+1. Run 20-25 queries against Perplexity Sonar (via `/geo-perplexity`)
+2. For each query, parse the answer for citation markers ([1], [2], etc.)
+3. Map markers to source URLs; identify which belong to the client domain
+4. Compute position-adjusted share: `client_weights / total_weights`
+5. Average across all queries and scale to 0-100
+
+**Interpretation:**
+
+| Score Range | Rating | Interpretation |
+|---|---|---|
+| 60-100 | Strong | Domain is a major source in AI answers for its category |
+| 40-59 | Moderate | Domain appears meaningfully but competitors dominate |
+| 20-39 | Weak | Domain appears sporadically; most answer content comes from others |
+| 5-19 | Minimal | Domain is barely visible in AI answers |
+| 0-4 | Not Visible | Domain does not appear in AI-generated answers |
+
+Use `scripts/ai_answer_share.py` for deterministic calculation.
+
+**IMPORTANT:** The AI Answer Share Score requires a Perplexity API run and is computed separately from the GEO Readiness Score. If no Perplexity data is available, report only the GEO Readiness Score and note that the AI Answer Share Score requires running `/geo-perplexity`.
+
 ---
 
 ## Issue Severity Classification
 
-Every issue found during the audit is classified by severity:
+Every issue found during the audit is classified by severity. **The test: "Would fixing this change whether AI systems cite or recommend this business?"**
 
 ### Critical (Fix Immediately)
 - All AI crawlers blocked in robots.txt
-- No indexable content (JavaScript-rendered only with no SSR)
+- No indexable content (page body genuinely empty in raw HTML — verified via curl, not assumed)
 - Domain-level noindex directive
 - Site returns 5xx errors on key pages
-- Complete absence of any structured data
-- Brand not recognized as an entity by any AI system
 
 ### High (Fix Within 1 Week)
 - Key AI crawlers (GPTBot, ClaudeBot, PerplexityBot) blocked
 - Zero question-answering content blocks on key pages
-- Missing Organization or LocalBusiness schema
-- No author attribution on content pages
+- No sameAs entity linking (AI systems can't connect the business to external knowledge)
+- No Organization or LocalBusiness schema
 - All content behind login/paywall with no preview
 
 ### Medium (Fix Within 1 Month)
-- Partial AI crawler blocking (some allowed, some blocked)
-- No llms.txt file present (emerging standard, limited AI platform adoption today)
-- llms.txt exists but is incomplete or malformed
+- sameAs links to fewer than 3 platforms
 - Content blocks average under 50 citability score
-- Missing FAQ schema on pages with FAQ content
-- Thin author bios without credentials
 - No Wikipedia or Reddit brand presence
+- No author attribution on content pages
+- Missing Product/ProductGroup schema on e-commerce PDPs
+- Missing FAQ schema on pages that contain Q&A content
 
 ### Low (Optimize When Possible)
-- Minor schema validation errors
-- Some images missing alt text
-- Content freshness issues on non-critical pages
-- Missing Open Graph tags
-- Suboptimal heading hierarchy on some pages
-- LinkedIn company page exists but is incomplete
+- No llms.txt file (emerging standard, limited AI platform adoption)
+- Thin author bios without credentials
+- Content freshness issues on time-sensitive pages only
+- LinkedIn company page incomplete
+- Missing BreadcrumbList schema
+
+### Not Scored (traditional SEO, not AI citation factors)
+Do not flag these as issues in GEO audit reports:
+- Minor schema validation errors (empty strings, http vs https context, HTML entities)
+- Image alt text coverage
+- Open Graph / Twitter Card tags
+- Heading hierarchy (H1 count, nesting depth)
+- URL slug quality
+- Security headers beyond HTTPS
+- Core Web Vitals scores
+- Page weight / image format optimization
 
 ---
 
@@ -239,11 +319,21 @@ Generate a file called `GEO-AUDIT-REPORT.md` with the following structure:
 
 ## Executive Summary
 
-**Overall GEO Score: [X]/100 ([Rating])**
+### Topline Scores
+
+| Score | Value | Rating |
+|---|---|---|
+| **GEO Readiness Score** | **[X]/100** | [Rating] |
+| **AI Answer Share Score** | **[X]/100** | [Rating] |
+
+- **GEO Readiness** = "How prepared is the site to be cited by AI systems?"
+- **AI Answer Share** = "How much of AI's answers does this business actually own?"
 
 [2-3 sentence summary of the site's GEO health, biggest strengths, and most critical gaps.]
 
-### Score Breakdown
+> **Note:** If the AI Answer Share Score has not been measured yet (requires `/geo-perplexity`), report it as "Not yet measured" and recommend running the Perplexity citation test.
+
+### GEO Readiness Breakdown
 
 | Category | Score | Weight | Weighted Score |
 |---|---|---|---|
@@ -253,7 +343,7 @@ Generate a file called `GEO-AUDIT-REPORT.md` with the following structure:
 | Technical GEO | [X]/100 | 15% | [X] |
 | Schema & Structured Data | [X]/100 | 10% | [X] |
 | Platform Optimization | [X]/100 | 10% | [X] |
-| **Overall GEO Score** | | | **[X]/100** |
+| **GEO Readiness Score** | | | **[X]/100** |
 
 ---
 
@@ -403,14 +493,20 @@ Studies show that **30-115% more people** see businesses that are optimized for 
 
 ---
 
-## Your Current Score: [X]/100
+## Your Current Scores
 
-**What this means:**
+### GEO Readiness: [X]/100
+**"How ready is your website for AI search?"**
 - [Score interpretation in plain language]
 - [What the score means for their business]
 
+### AI Answer Share: [X]/100
+**"How much of AI's answers come from your business?"**
+- [Score interpretation — e.g. "When someone asks ChatGPT about [industry] in [city], only [X]% of the answer content references your business."]
+- [If not yet measured: "We haven't tested this yet — we'll run AI search queries to measure your actual visibility."]
+
 ### Think of it like curb appeal for your website:
-[Analogy that explains the score in relatable terms]
+[Analogy that explains the scores in relatable terms — Readiness is like having a well-maintained storefront; Answer Share is like how often the concierge actually recommends you]
 
 ---
 

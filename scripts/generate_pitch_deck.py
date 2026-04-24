@@ -1559,9 +1559,9 @@ SAMPLE_DATA = {
     "MEANS_2": "Competitors with inferior work get recommended instead of you",
     "MEANS_3": "Your Animal Artistry training and sheep specialization are invisible to AI systems",
 
-    "ISSUE_1_TITLE": "Wix Sites Are Nearly Invisible to AI",
-    "ISSUE_1_BODY": "Wix uses JavaScript rendering which many AI crawlers can't process. Your content may be invisible to ChatGPT, Claude, and others.",
-    "ISSUE_1_CALLOUT": "Impact: AI systems may see a blank page instead of your years of expertise",
+    "ISSUE_1_TITLE": "Key Content Missing from Server-Rendered HTML",
+    "ISSUE_1_BODY": "Wix uses JavaScript rendering for some content. While basic page elements load, detailed descriptions and expertise content may not be available to AI crawlers like GPTBot and ClaudeBot.",
+    "ISSUE_1_CALLOUT": "Impact: AI systems may miss your detailed expertise when generating recommendations",
 
     "ISSUE_2_TITLE": "No Structured Data for AI to Parse",
     "ISSUE_2_BODY": "Your site has zero schema markup. AI systems don't know you're a LocalBusiness, what services you offer, or your specializations.",

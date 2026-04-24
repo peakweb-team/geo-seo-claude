@@ -189,7 +189,14 @@ Present the key technical findings in business-friendly language:
 | IndexNow Protocol | Implemented/Not | [Impact on Bing/ChatGPT indexing speed] |
 ```
 
-**Critical finding callout**: If SSR is missing or partial, highlight this prominently: "Your site uses client-side rendering, which means AI crawlers see an empty page when they visit. This is the single most impactful technical issue for AI search visibility. Until this is resolved, most AI platforms cannot cite your content."
+**Critical finding callout for SSR issues**: Before making any claim about what AI crawlers can or cannot see, you MUST verify by fetching the page with `curl -s <URL>` and inspecting the raw HTML. Do NOT assume a JS-heavy site means crawlers see nothing — many platforms (Shopify, WordPress, etc.) server-render product names, prices, and basic content even when descriptions or interactive elements require JS.
+
+Report what you actually observed:
+- "We fetched [URL] and found [product names/prices/headings] are server-rendered, but [descriptions/reviews/images] require JavaScript to load."
+- Only use "critical" severity if the page body is genuinely empty or near-empty in raw HTML (e.g., a single `<div id="root"></div>` with no content).
+- If core content (names, prices, key facts) IS present but supplementary content requires JS, rate this as HIGH or MEDIUM, not CRITICAL.
+
+**Never say** "AI crawlers see an empty page" or "your content is invisible" without citing the specific URL you tested and what was missing from the raw HTML.
 
 ### Section 8: Schema & Structured Data
 

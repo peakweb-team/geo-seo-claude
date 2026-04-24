@@ -171,9 +171,14 @@ After the script completes, read the output JSON and present a clean summary:
 **Queries tested:** {n}
 **Queries where domain was cited:** {n} ({pct}%)
 
+### AI Answer Share Score: {score}/100 ({rating})
+
+This measures how much of AI-generated answers is attributable to your domain,
+weighted by citation position (earlier = more valuable).
+
 ### Cited queries:
-- ✓ "..."
-- ✓ "..."
+- ✓ "..." (answer share: X%)
+- ✓ "..." (answer share: X%)
 
 ### Not cited:
 - ✗ "..."
@@ -184,13 +189,14 @@ After the script completes, read the output JSON and present a clean summary:
 
 For a **validation run**, also show the change table from the report:
 ```
-| Metric         | Baseline | Current | Change |
-|----------------|----------|---------|--------|
-| Citation Rate  | X%       | Y%      | +Z%    |
-| Queries Cited  | n/N      | n/N     | +n     |
+| Metric              | Baseline | Current | Change |
+|---------------------|----------|---------|--------|
+| AI Answer Share     | X/100    | Y/100   | +Z     |
+| Citation Rate       | X%       | Y%      | +Z%    |
+| Queries Cited       | n/N      | n/N     | +n     |
 ```
 
-And list any improvements and regressions by query.
+And list any improvements and regressions by query, including per-query share changes.
 
 ---
 

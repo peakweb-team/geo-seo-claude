@@ -21,6 +21,13 @@ from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse
 
+# Sibling module — available when running from the scripts/ directory or project root
+try:
+    from ai_answer_share import compute_answer_share_score, compare_answer_share
+except ImportError:
+    sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+    from ai_answer_share import compute_answer_share_score, compare_answer_share
+
 try:
     import requests
 except ImportError:
@@ -124,6 +131,7 @@ def run_validation(domain: str, queries: list[str], api_key: str) -> dict:
                 "matching_urls": matching_urls,
                 "total_citations": len(citations),
                 "all_citations": citations,
+                "answer_text": answer,
                 "answer_preview": answer[:500] if answer else "",
                 "domain_mentioned_in_text": domain.lower() in answer.lower() if answer else False,
             }
@@ -147,6 +155,13 @@ def run_validation(domain: str, queries: list[str], api_key: str) -> dict:
     # Calculate citation rate
     if results["total_queries"] > 0:
         results["citation_rate"] = results["queries_with_citation"] / results["total_queries"]
+
+    # Compute AI Answer Share Score
+    answer_share = compute_answer_share_score(domain, results["query_results"])
+    results["answer_share_score"] = answer_share["score"]
+    results["answer_share_rating"] = answer_share["rating"]
+    results["answer_share_avg"] = answer_share["avg_share"]
+    results["answer_share_detail"] = answer_share
 
     return results
 
@@ -284,6 +299,8 @@ def main():
     print(f"Queries tested: {results['total_queries']}")
     print(f"Queries with citation: {results['queries_with_citation']}")
     print(f"Citation rate: {results['citation_rate']*100:.1f}%")
+    print(f"\nAI Answer Share Score: {results['answer_share_score']}/100 ({results['answer_share_rating']})")
+    print(f"Average position-adjusted share: {results['answer_share_avg']*100:.1f}%")
 
     # Compare with baseline if provided
     if args.baseline:
@@ -298,6 +315,14 @@ def main():
         print(f"  Change: {comparison['citation_rate_change']*100:+.1f}%")
         print(f"  Improvements: {len(comparison['improvements'])}")
         print(f"  Regressions: {len(comparison['regressions'])}")
+
+        # Compare Answer Share scores
+        if "answer_share_detail" in baseline and "answer_share_detail" in results:
+            share_comparison = compare_answer_share(
+                baseline["answer_share_detail"], results["answer_share_detail"]
+            )
+            print(f"\n  AI Answer Share Score change: {share_comparison['baseline_score']} → {share_comparison['current_score']} ({share_comparison['score_change']:+d})")
+            comparison["answer_share_comparison"] = share_comparison
 
         # Generate report if requested
         report_path = args.report or args.output.replace(".json", "-report.md")

@@ -12,11 +12,23 @@ allowed-tools: Read, Bash, WebFetch, Write, Glob, Grep
 
 You are a content quality specialist. Your job is to analyze a target URL and evaluate its content against Google's E-E-A-T framework, measure content depth and readability, detect AI content indicators, and assess topical authority. Both traditional search engines and AI models use content quality signals to determine which sources to cite. You produce a structured report section with scoring across all dimensions.
 
+## VERIFIED EVIDENCE Block (read this first)
+
+If your prompt contains a `## VERIFIED EVIDENCE` block, **use it as ground truth for body text presence, word counts, and SSR assessment**. These facts were collected via curl before your analysis. Do not claim content is "invisible to AI crawlers" for any page that the evidence block shows has substantial body text. Skip re-fetching pages already covered and score from the verified data.
+
+## Critical: Verify Content with curl
+
+**WebFetch does NOT reliably return all page content.** It may strip body text, returning little or no content for pages that actually have substantial server-rendered text. Before claiming content is "missing" or "not present," verify by running `curl -s -L "<URL>"` via Bash and checking the raw HTML.
+
+Use WebFetch for a readable summary, but use `curl` as ground truth for any claim about content presence or absence.
+
 ## Execution Steps
 
 ### Step 1: Extract and Analyze Page Content
 
-- Use WebFetch to retrieve the target URL.
+- Use WebFetch to retrieve the target URL for a readable summary.
+- **Also** verify content presence with `curl -s -L "<URL>"` via Bash — strip `<script>` and `<style>` tags, then check for actual text content.
+- If WebFetch shows minimal content but curl shows substantial text, trust curl and note the discrepancy.
 - Extract all text content, preserving structure (headings, paragraphs, lists, tables, blockquotes).
 - Record:
   - Total word count (body content only, excluding navigation and footer)
@@ -220,20 +232,24 @@ Evaluate whether the site demonstrates topical authority in the subject area of 
 
 ### Step 10: Calculate Content Score
 
-Compute the **Content Score (0-100)** by combining:
+Compute the **Content Score (0-100)** by combining. Focus on what makes content citable by AI systems.
+
+**The test for every criterion: "Would improving this change whether Perplexity/ChatGPT cites this content?"**
 
 | Component | Weight | Max Points |
 |---|---|---|
 | Experience | 15% | 15 |
-| Expertise | 15% | 15 |
-| Authoritativeness | 15% | 15 |
-| Trustworthiness | 15% | 15 |
-| Content Metrics (depth, readability, structure) | 15% | 15 |
-| AI Content Assessment | 10% | 10 |
-| Topical Authority | 10% | 10 |
-| Content Freshness | 5% | 5 |
+| Expertise | 20% | 20 |
+| Authoritativeness | 20% | 20 |
+| Trustworthiness | 10% | 10 |
+| Content Depth & Structure | 20% | 20 |
+| Topical Authority | 15% | 15 |
 
-Normalize E-E-A-T scores from their 0-25 scale to 0-15 for weighting.
+Normalize E-E-A-T scores from their 0-25 scale to their respective max points for weighting.
+
+**Not scored** (low/no AI citation impact):
+- AI Content Assessment — Whether content is AI-generated does NOT prevent citation. Google has no penalty for AI content; AI systems routinely cite AI-generated articles. Do not score this.
+- Content Freshness as a standalone metric — Only flag staleness for time-sensitive topics (news, pricing, tech specs). Evergreen content (history, guides, expertise) is cited regardless of age. Assess freshness within the Expertise dimension where relevant, not as a separate score.
 
 ## Output Format
 
